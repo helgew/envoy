@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<database xmlns="http://db.apache.org/torque/4.0/templates/database"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://db.apache.org/torque/4.0/templates/database
+        http://db.apache.org/torque/4.0/templates/database-strict.xsd"
+	name="envoy" defaultIdMethod="native">
+
+	<table name="envoy" description="Table of Envoy Appliances"
+		idMethod="none">
+		<column name="serial_number" type="VARCHAR" size="100"
+			primaryKey="true"></column>
+		<column name="ip_address" type="VARCHAR" size="15"></column>
+		<column name="mac_address" type="VARCHAR" size="17"></column>
+		<column name="part_number" type="VARCHAR" size="100"></column>
+		<column name="timezone" type="VARCHAR" size="100"></column>
+		<column name="longitude" type="FLOAT"></column>
+		<column name="latitude" type="FLOAT"></column>
+		<column name="sw_version" type="VARCHAR" size="100"></column>
+	</table>
+
+	<table name="report" description="The reports stored">
+		<column name="report_id" type="INTEGER" primaryKey="true"></column>
+		<column name="envoy_id" type="VARCHAR" size="15" required="true"></column>
+		<column name="report_timestamp" type="DATE"></column>
+		<column name="processing_timestamp" type="TIMESTAMP"></column>
+		
+		<foreign-key foreignTable="envoy">
+			<reference local="envoy_id" foreign="serial_number" />
+		</foreign-key>
+	</table>
+	
+	<table name="equipment" description="The microinverters in the array">
+		<column name="equipment_id" type="INTEGER" primaryKey="true"></column>
+		<column name="serial_number" type="VARCHAR" size="14" required="true"></column>
+	</table>
+
+	<table name="interval" description="The intervals reported for each microinverter"
+		idMethod="none">
+		<column name="interval_id" type="INTEGER" primaryKey="true"></column>
+		<column name="report_id" type="INTEGER" required="true"></column>
+		<column name="equipment_id" type="INTEGER"></column>
+		<column name="stat_duration" type="INTEGER"></column>
+		<column name="interval_duration" type="INTEGER"></column>
+		<column name="end_date" type="DATE"></column>
+		<column name="stats" type="INTEGER"></column>
+
+		<foreign-key foreignTable="report">
+			<reference local="report_id" foreign="report_id" />
+		</foreign-key>
+		<foreign-key foreignTable="equipment">
+			<reference local="equipment_id" foreign="equipment_id" />
+		</foreign-key>
+	</table>
+	
+	<table name="reading" description="The readings reported for each microinverter" idMethod="none">
+		<column name="reading_id" type="INTEGER" primaryKey="true"></column>
+		<column name="report_id" type="INTEGER" required="true"></column>
+		<column name="equipment_id" type="INTEGER"></column>
+		<column name="date" type="DATE"></column>
+		<column name="flags" type="VARCHAR" size="100"></column>
+		<column name="ac_voltage" type="FLOAT"></column>
+		<column name="ac_frequency" type="FLOAT"></column>
+		<column name="dc_voltage" type="FLOAT"></column>
+		<column name="dc_current" type="FLOAT"></column>
+		<column name="temperature" type="INTEGER"></column>
+		<column name="unknown1" type="FLOAT"></column>
+		<column name="unknown2" type="FLOAT"></column>
+
+		<foreign-key foreignTable="report">
+			<reference local="report_id" foreign="report_id" />
+		</foreign-key>
+		<foreign-key foreignTable="equipment">
+			<reference local="equipment_id" foreign="equipment_id" />
+		</foreign-key>
+	</table>
+</database>
