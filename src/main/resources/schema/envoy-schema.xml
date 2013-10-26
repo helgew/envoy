@@ -2,7 +2,7 @@
 <database xmlns="http://db.apache.org/torque/4.0/templates/database"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://db.apache.org/torque/4.0/templates/database
-        http://db.apache.org/torque/4.0/templates/database-strict.xsd"
+        http://db.apache.org/torque/torque-4.0/documentation/orm-reference/database-4-0.xsd"
 	name="envoy" defaultIdMethod="native">
 
 	<table name="envoy" description="Table of Envoy Appliances"
@@ -21,7 +21,7 @@
 	<table name="report" description="The reports stored">
 		<column name="report_id" type="INTEGER" primaryKey="true"></column>
 		<column name="envoy_id" type="VARCHAR" size="15" required="true"></column>
-		<column name="report_timestamp" type="DATE"></column>
+		<column name="report_timestamp" type="TIMESTAMP"></column>
 		<column name="processing_timestamp" type="TIMESTAMP"></column>
 		
 		<foreign-key foreignTable="envoy">
@@ -34,14 +34,14 @@
 		<column name="serial_number" type="VARCHAR" size="14" required="true"></column>
 	</table>
 
-	<table name="interval" description="The intervals reported for each microinverter"
+	<table name="interval_tbl" javaName="Interval" description="The intervals reported for each microinverter"
 		idMethod="none">
 		<column name="interval_id" type="INTEGER" primaryKey="true"></column>
 		<column name="report_id" type="INTEGER" required="true"></column>
 		<column name="equipment_id" type="INTEGER"></column>
 		<column name="stat_duration" type="INTEGER"></column>
 		<column name="interval_duration" type="INTEGER"></column>
-		<column name="end_date" type="DATE"></column>
+		<column name="end_date" type="TIMESTAMP"></column>
 		<column name="stats" type="INTEGER"></column>
 
 		<foreign-key foreignTable="report">
@@ -56,7 +56,7 @@
 		<column name="reading_id" type="INTEGER" primaryKey="true"></column>
 		<column name="report_id" type="INTEGER" required="true"></column>
 		<column name="equipment_id" type="INTEGER"></column>
-		<column name="date" type="DATE"></column>
+		<column name="date" type="TIMESTAMP"></column>
 		<column name="flags" type="VARCHAR" size="100"></column>
 		<column name="ac_voltage" type="FLOAT"></column>
 		<column name="ac_frequency" type="FLOAT"></column>
