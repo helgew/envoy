@@ -19,12 +19,15 @@ import org.apache.torque.Torque;
 import org.apache.torque.TorqueException;
 import org.apache.torque.criteria.Criteria;
 import org.grajagan.om.Envoy;
+import org.grajagan.om.EnvoyHelper;
 import org.grajagan.om.EnvoyPeer;
 import org.grajagan.om.Equipment;
 import org.grajagan.om.EquipmentPeer;
 import org.grajagan.om.Interval;
+import org.grajagan.om.IntervalHelper;
 import org.grajagan.om.IntervalPeer;
 import org.grajagan.om.Reading;
+import org.grajagan.om.ReadingHelper;
 import org.grajagan.om.ReadingPeer;
 import org.grajagan.om.Report;
 import org.grajagan.om.ReportPeer;
@@ -67,15 +70,7 @@ public class ReportLoader {
             envoy = EnvoyPeer.retrieveByPK(serialNumber);
         } catch (NoRowsException e) {
             LOG.debug("Adding new envoy with serial number " + serialNumber);
-            envoy = new Envoy();
-            envoy.setSerialNumber(serialNumber);
-            envoy.setLatitude(Double.parseDouble(envoyXML.getAttribute("latitude")));
-            envoy.setLongitude(Double.parseDouble(envoyXML.getAttribute("longitude")));
-            envoy.setMacAddress(envoyXML.getAttribute("mac_addr"));
-            envoy.setTimezone(envoyXML.getAttribute("timezone"));
-            envoy.setSwVersion(envoyXML.getAttribute("sw_version"));
-            envoy.setPartNumber(envoyXML.getAttribute("part_num"));
-            envoy.setIpAddress(envoyXML.getAttribute("ip_addr"));
+            envoy = EnvoyHelper.parseFromXMLElement(envoyXML);
             envoy.save();
         }
 
@@ -111,19 +106,10 @@ public class ReportLoader {
 
         for (int n = 0; n < nodeList.getLength(); n++) {
             Element invXML = (Element) nodeList.item(n);
-
             Equipment inverter = getOrCreateInverter(invXML.getAttribute("eqid"));
-
-            Interval interval = new Interval();
-            interval.setIntervalId(Integer.parseInt(invXML.getAttribute("id")));
+            Interval interval = IntervalHelper.parseFromXMLElement(invXML);
             interval.setEquipment(inverter);
             interval.setReport(report);
-            interval.setStats(Integer.parseInt(invXML.getAttribute("stats")));
-            interval.setStatDuration(Integer.parseInt(invXML.getAttribute("stat_duration")));
-            interval.setIntervalDuration(Integer
-                    .parseInt(invXML.getAttribute("interval_duration")));
-            interval.setEndDate(new Date(Long.parseLong(invXML.getAttribute("end_date")) * 1000));
-
             interval.save();
         }
 
@@ -131,28 +117,10 @@ public class ReportLoader {
 
         for (int n = 0; n < nodeList.getLength(); n++) {
             Element readXML = (Element) nodeList.item(n);
-
             Equipment inverter = getOrCreateInverter(readXML.getAttribute("eqid"));
-            Reading reading = new Reading();
-            reading.setReadingId(Integer.parseInt(readXML.getAttribute("id")));
+            Reading reading = ReadingHelper.parseFromXmlElement(readXML);
             reading.setEquipment(inverter);
             reading.setReport(report);
-            reading.setDate(new Date(Long.parseLong(readXML.getAttribute("date")) * 1000));
-
-            String[] stats = readXML.getAttribute("stats").split(",");
-
-            if (stats.length != 7) {
-                throw new Exception("Unknown stats array for reading: " + readXML);
-            }
-
-            reading.setAcVoltage(Double.parseDouble(stats[0]) / 1000);
-            reading.setAcFrequency(Double.parseDouble(stats[1]) / 1000);
-            reading.setDcVoltage(Double.parseDouble(stats[2]) / 1000);
-            reading.setDcCurrent(Double.parseDouble(stats[3]) / 1000);
-            reading.setTemperature(Integer.parseInt(stats[4]));
-            reading.setUnknown1(Double.parseDouble(stats[5]));
-            reading.setUnknown2(Double.parseDouble(stats[6]));
-
             reading.save();
         }
 
