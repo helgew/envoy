@@ -1,4 +1,4 @@
-package org.grajagan.om;
+package org.grajagan.envoy.om;
 
 
 /**
@@ -14,7 +14,7 @@ package org.grajagan.om;
  */
 
 public  class Equipment
-    extends org.grajagan.om.BaseEquipment
+    extends org.grajagan.envoy.om.BaseEquipment
 {
     /** Serial version */
     private static final long serialVersionUID = 1382737896218L;

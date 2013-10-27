@@ -1,4 +1,4 @@
-package org.grajagan.om;
+package org.grajagan.envoy.om;
 
 /**
  * The reports stored
@@ -13,7 +13,7 @@ package org.grajagan.om;
  */
 
 public class ReportPeerImpl
-    extends org.grajagan.om.BaseReportPeerImpl
+    extends org.grajagan.envoy.om.BaseReportPeerImpl
 {
     /** Serial version */
     private static final long serialVersionUID = 1382737897555L;

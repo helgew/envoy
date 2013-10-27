@@ -1,8 +1,8 @@
-package org.grajagan.om;
+package org.grajagan.envoy.om;
 
 import java.util.Date;
 
-import org.grajagan.XMLFormatException;
+import org.grajagan.envoy.XMLFormatException;
 import org.w3c.dom.Element;
 
 public final class ReadingHelper {

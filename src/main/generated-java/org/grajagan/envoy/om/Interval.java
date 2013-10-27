@@ -1,4 +1,4 @@
-package org.grajagan.om;
+package org.grajagan.envoy.om;
 
 
 /**
@@ -14,7 +14,7 @@ package org.grajagan.om;
  */
 
 public  class Interval
-    extends org.grajagan.om.BaseInterval
+    extends org.grajagan.envoy.om.BaseInterval
 {
     /** Serial version */
     private static final long serialVersionUID = 1382737896233L;

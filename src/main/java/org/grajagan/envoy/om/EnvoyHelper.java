@@ -1,4 +1,4 @@
-package org.grajagan.om;
+package org.grajagan.envoy.om;
 
 import org.w3c.dom.Element;
 

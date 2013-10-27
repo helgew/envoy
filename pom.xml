@@ -55,7 +55,7 @@
 							<configPackage>org.apache.torque.templates.om</configPackage>
 							<sourceDir>src/main/resources/schema</sourceDir>
 							<options>
-								<torque.om.package>org.grajagan.om</torque.om.package>
+								<torque.om.package>org.grajagan.envoy.om</torque.om.package>
 								<torque.database>mysql</torque.database>
 							</options>
 						</configuration>
@@ -118,6 +118,7 @@
 				<!-- setting java version to 1.7 -->
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
+				<version>2.3.2</version>
 				<configuration>
 					<source>1.7</source>
 					<target>1.7</target>
@@ -133,6 +134,22 @@
 						<phase>package</phase>
 						<goals>
 							<goal>copy-dependencies</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.dstovall</groupId>
+				<artifactId>onejar-maven-plugin</artifactId>
+				<version>1.4.5</version>
+				<executions>
+					<execution>
+						<configuration>
+							<mainClass>org.grajagan.ReportLoader</mainClass>
+							<filename>ReportLoader.jar</filename>
+						</configuration>
+						<goals>
+							<goal>one-jar</goal>
 						</goals>
 					</execution>
 				</executions>
