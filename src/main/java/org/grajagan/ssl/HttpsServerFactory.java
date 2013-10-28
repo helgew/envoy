@@ -24,9 +24,6 @@ import com.sun.net.httpserver.HttpsServer;
  */
 public final class HttpsServerFactory {
     
-    /** A logger. */
-    protected final static Logger LOG = Logger.getLogger(HttpsServerFactory.class);
-    
     /** Factory class constructor. */
     private HttpsServerFactory() {
     }
@@ -76,12 +73,17 @@ public final class HttpsServerFactory {
 }
 
 class LogHandler implements HttpHandler {
+    /** A logger. */
+    protected final static Logger LOG = Logger.getLogger(LogHandler.class);
+    
     public void handle(HttpExchange httpExchange) throws IOException {
         final InputStream is;
         StringBuilder buf;
         int b;
         final String request;
 
+        LOG.debug("Received request for " + httpExchange.getRequestURI());
+        
         buf = new StringBuilder();
 
         /*
@@ -136,7 +138,7 @@ class LogHandler implements HttpHandler {
             buf.append(request);
         }
 
-        HttpsServerFactory.LOG.debug(buf.toString());
+        LOG.debug("Full request:\n" + buf.toString());
 
         httpExchange.sendResponseHeaders(HTTP_OK, 0);
         httpExchange.close();
