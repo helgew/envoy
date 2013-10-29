@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.MalformedURLException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URL;
@@ -28,51 +29,37 @@ import com.sun.net.httpserver.HttpsServer;
 
 public class ProxyHandler implements HttpHandler {
 
-	private final URL remoteUrl;
-	private static File tmpDir;
+	public static final int TIMEOUT = 20000;
+    private final URL remoteUrl;
+	private File temporaryDirectory;
 	private static final String prefix = "proxy-";
 
 	private static final Logger LOG = Logger.getLogger(ProxyHandler.class);
 
 	public ProxyHandler(URL upstreamUrl) {
 		this.remoteUrl = upstreamUrl;
-		tmpDir = new File("/var/spool/envoy");
-		if (!tmpDir.exists()) {
-			if (!tmpDir.mkdirs()) {
-				LOG.warn("Cannot log to " + tmpDir
+		temporaryDirectory = new File("/var/spool/envoy");
+		if (!temporaryDirectory.exists()) {
+			if (!temporaryDirectory.mkdirs()) {
+				LOG.warn("Cannot log to " + temporaryDirectory
 						+ ", resorting to default temporary directory");
-				tmpDir = null;
+				temporaryDirectory = null;
 			}
 		}
 	}
 
 	@Override
-	public void handle(HttpExchange httpExchange) throws IOException {
-		LOG.debug("Received request for " + httpExchange.getRequestURI());
+	public void handle(HttpExchange clientExchange) throws IOException {
+		LOG.debug("Received request for " + clientExchange.getRequestURI());
 
-		File requestFile = File.createTempFile(prefix, ".request", tmpDir);
-		File responseFile = File.createTempFile(prefix, ".response", tmpDir);
+		File requestFile = File.createTempFile(prefix, ".request", temporaryDirectory);
+		File responseFile = File.createTempFile(prefix, ".response", temporaryDirectory);
 
-		URL url = new URL(remoteUrl.getProtocol(), remoteUrl.getHost(),
-				remoteUrl.getPort(), httpExchange.getRequestURI().toString());
-
-		HttpsURLConnection remoteConnection = null;
-		try {
-			remoteConnection = HttpsURLConnectionFactory
-					.createHttpsURLConnection(url);
-		} catch (Exception e) {
-			LOG.error("Cannot create remote connection", e);
-			throw new IOException(e);
-		}
-
-		remoteConnection.setRequestMethod(httpExchange.getRequestMethod());
-		remoteConnection.setDoInput(true);
-		remoteConnection.setDoOutput(true);
-		remoteConnection.setConnectTimeout(20000);
-
+		HttpsURLConnection remoteConnection = getRemoteConnection(clientExchange);
+		
 		FileOutputStream fos = new FileOutputStream(requestFile);
 
-		Headers headers = httpExchange.getRequestHeaders();
+		Headers headers = clientExchange.getRequestHeaders();
 
 		boolean isDeflated = false;
 
@@ -93,11 +80,11 @@ public class ProxyHandler implements HttpHandler {
 		hsb.append("\n");
 
 		LOG.debug("writing request to " + requestFile);
-		IOUtils.write(httpExchange.getRequestMethod() + " "
+		IOUtils.write(clientExchange.getRequestMethod() + " "
 				+ remoteConnection.getURL().toString() + "\n\n", fos);
 		IOUtils.write(hsb.toString(), fos);
 
-		InputStream is = httpExchange.getRequestBody();
+		InputStream is = clientExchange.getRequestBody();
 		if (isDeflated) {
 			is = new InflaterInputStream(is);
 		}
@@ -112,7 +99,7 @@ public class ProxyHandler implements HttpHandler {
 			os = remoteConnection.getOutputStream();
 		} catch (SocketTimeoutException e) {
 			LOG.warn("timeout while trying to access remote host");
-			httpExchange.close();
+			clientExchange.close();
 			responseFile.delete();
 			return;
 		}
@@ -125,7 +112,7 @@ public class ProxyHandler implements HttpHandler {
 
 		int statusCode = remoteConnection.getResponseCode();
 
-		headers = httpExchange.getResponseHeaders();
+		headers = clientExchange.getResponseHeaders();
 		String responseMessage = null;
 		hsb = new StringBuffer();
 		isDeflated = false;
@@ -161,18 +148,38 @@ public class ProxyHandler implements HttpHandler {
 		IOUtils.write(responseString, fos);
 		fos.close();
 
-		httpExchange.sendResponseHeaders(statusCode, responseString.length());
-		os = httpExchange.getResponseBody();
+		clientExchange.sendResponseHeaders(statusCode, responseString.length());
+		os = clientExchange.getResponseBody();
 		if (isDeflated) {
 			os = new DeflaterOutputStream(os);
 		}
 		IOUtils.write(responseString, os);
 
-		httpExchange.close();
+		clientExchange.close();
 	}
 
-	private void saveXML(String requestString) throws IOException {
-		File xml = File.createTempFile(prefix, ".xml", tmpDir);
+	protected HttpsURLConnection getRemoteConnection(HttpExchange clientExchange) throws IOException {
+        HttpsURLConnection remoteConnection = null;
+        URL url = new URL(remoteUrl.getProtocol(), remoteUrl.getHost(),
+                remoteUrl.getPort(), clientExchange.getRequestURI().toString());
+
+        try {
+            remoteConnection = HttpsURLConnectionFactory
+                    .createHttpsURLConnection(url);
+        } catch (Exception e) {
+            LOG.error("Cannot create remote connection", e);
+            throw new IOException(e);
+        }
+
+        remoteConnection.setRequestMethod(clientExchange.getRequestMethod());
+        remoteConnection.setDoInput(true);
+        remoteConnection.setDoOutput(true);
+        remoteConnection.setConnectTimeout(TIMEOUT);
+        return remoteConnection;
+    }
+
+    private void saveXML(String requestString) throws IOException {
+		File xml = File.createTempFile(prefix, ".xml", temporaryDirectory);
 		for (String keyValue : requestString.split("&")) {
 			String[] pair = keyValue.split("=");
 			if (pair[0].equals("body")) {
@@ -186,7 +193,15 @@ public class ProxyHandler implements HttpHandler {
 		xml.delete();
 	}
 
-	/**
+	public File getTemporaryDirectory() {
+        return temporaryDirectory;
+    }
+
+    public void setTemporaryDirectory(File temporaryDirectory) {
+        this.temporaryDirectory = temporaryDirectory;
+    }
+
+    /**
 	 * Main method to debug connections to the server on a given port.
 	 * 
 	 * @param argv
