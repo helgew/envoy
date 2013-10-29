@@ -83,7 +83,8 @@ public class ProxyHandler implements HttpHandler {
 				hsb.append(key + ": " + value + "\n");
 				remoteConnection.setRequestProperty(key, value);
 				if (key.equalsIgnoreCase("content-type")
-						&& value.equalsIgnoreCase("application/x-deflate")) {
+						&& value.toLowerCase()
+								.contains("application/x-deflate")) {
 					isDeflated = true;
 				}
 			}
@@ -136,7 +137,8 @@ public class ProxyHandler implements HttpHandler {
 					hsb.append(key + ": " + value + "\n");
 					headers.add(key, value);
 					if (key.equalsIgnoreCase("content-type")
-							&& value.equalsIgnoreCase("application/x-deflate")) {
+							&& value.toLowerCase().contains(
+									"application/x-deflate")) {
 						isDeflated = true;
 					}
 				} else {
