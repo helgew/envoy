@@ -31,21 +31,13 @@ public class ProxyHandler implements HttpHandler {
 
     public static final int TIMEOUT = 20000;
     private final URL remoteUrl;
-    private File temporaryDirectory;
+    private File temporaryDirectory = null;
     private static final String prefix = "proxy-";
 
     private static final Logger LOG = Logger.getLogger(ProxyHandler.class);
 
     public ProxyHandler(URL upstreamUrl) {
         this.remoteUrl = upstreamUrl;
-        temporaryDirectory = new File("/var/spool/envoy");
-        if (!temporaryDirectory.exists()) {
-            if (!temporaryDirectory.mkdirs()) {
-                LOG.warn("Cannot log to " + temporaryDirectory
-                        + ", resorting to default temporary directory");
-                temporaryDirectory = null;
-            }
-        }
     }
 
     @Override
@@ -183,8 +175,15 @@ public class ProxyHandler implements HttpHandler {
         return temporaryDirectory;
     }
 
-    public void setTemporaryDirectory(File temporaryDirectory) {
-        this.temporaryDirectory = temporaryDirectory;
+    public void setTemporaryDirectory(File tmpDirectory) {
+        temporaryDirectory = tmpDirectory;
+        if (!temporaryDirectory.exists()) {
+            if (!temporaryDirectory.mkdirs()) {
+                LOG.warn("Cannot log to " + temporaryDirectory
+                        + ", resorting to default temporary directory");
+                temporaryDirectory = null;
+            }
+        }
     }
 
     /**
