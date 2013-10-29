@@ -87,6 +87,8 @@ public class ProxyHandler implements HttpHandler {
         IOUtils.write(requestBytes, os);
         os.close();
 
+        LOG.debug("received " + remoteConnection.getResponseCode() + " from remote");
+        
         // copy remote response headers to client response
         HttpHeaders responseHeaders = new HttpHeaders(remoteConnection.getHeaderFields());
         clientExchange.getResponseHeaders().putAll(responseHeaders);
@@ -101,7 +103,7 @@ public class ProxyHandler implements HttpHandler {
         byte[] responseBytes = ccopy(is, os);
 
         File responseFile = File.createTempFile(prefix, ".response", temporaryDirectory);
-        pickle(responseFile, responseHeaders.getFirst(null), responseHeaders, responseBytes);
+        pickle(responseFile, responseHeaders.getMethod(), responseHeaders, responseBytes);
 
         os.close();
         clientExchange.close();
@@ -111,7 +113,7 @@ public class ProxyHandler implements HttpHandler {
             throws IOException {
         FileOutputStream fos = new FileOutputStream(file);
 
-        LOG.debug("writing to " + file);
+        LOG.info("writing to " + file);
         IOUtils.write(method + "\n\n", fos);
         IOUtils.write(headers.toString() + "\n", fos);
 
@@ -131,14 +133,10 @@ public class ProxyHandler implements HttpHandler {
     }
 
     private static byte[] ccopy(InputStream input, OutputStream output) throws IOException {
-        int n = 0;
-        byte[] buffer = new byte[4096];
         ByteArrayOutputStream ccos = new ByteArrayOutputStream();
-        while (-1 != (n = input.read(buffer))) {
-            if (output != null) {
-                output.write(buffer, 0, n);
-            }
-            ccos.write(buffer, 0, n);
+        IOUtils.copy(input, ccos);
+        if (output != null) {
+            IOUtils.write(ccos.toByteArray(), output);
         }
         LOG.debug("CCopied " + ccos.size() + " bytes ");
         return ccos.toByteArray();
@@ -170,7 +168,7 @@ public class ProxyHandler implements HttpHandler {
         for (String keyValue : requestString.split("&")) {
             String[] pair = keyValue.split("=");
             if (pair[0].equals("body")) {
-                LOG.debug("writing xml to " + xml);
+                LOG.info("writing xml to " + xml);
                 FileOutputStream fos = new FileOutputStream(xml);
                 IOUtils.write(URLDecoder.decode(pair[1], "UTF-8"), fos);
                 fos.close();

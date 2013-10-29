@@ -6,10 +6,14 @@ import java.util.Map;
 import com.sun.net.httpserver.Headers;
 
 public class HttpHeaders extends Headers {
+    
+    private String method;
 
     public HttpHeaders(Map<String, List<String>> headers) {
         super();
         putAll(headers);
+        method = getFirst(null);
+        remove(null);
     }
 
     @Override
@@ -29,6 +33,9 @@ public class HttpHeaders extends Headers {
     public int getContentLength() {
         for (Entry<String, List<String>> entry : this.entrySet()) {
             String key = entry.getKey();
+            if (key == null) {
+                continue;
+            }
             for (String value : entry.getValue()) {
                 if (key.equalsIgnoreCase("content-length")) {
                     return Integer.parseInt(value);
@@ -45,6 +52,9 @@ public class HttpHeaders extends Headers {
     public boolean isDeflated() {
         for (Entry<String, List<String>> entry : this.entrySet()) {
             String key = entry.getKey();
+            if (key == null) {
+                continue;
+            }
             for (String value : entry.getValue()) {
                 if (key.equalsIgnoreCase("content-type")
                         && value.toLowerCase().contains("application/x-deflate")) {
@@ -57,5 +67,9 @@ public class HttpHeaders extends Headers {
 
     public void setDeflated(boolean isDeflated) {
         this.set("Content-Type", "application/x-deflated");
+    }
+
+    public String getMethod() {
+        return method;
     }
 }
