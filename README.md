@@ -24,15 +24,15 @@ Compilation
 * Change the user name and password as well as the database name in both ``pom.xml`` and ``src/main/resources/torque.properties``.
 * Generate the executable jar::
 
-    mvn package
+  mvn package
     
 * Create the envoy database::
 
-    echo "create database envoy;" | mysql -u<user> -p<pass>
+  echo "create database envoy;" | mysql -u<user> -p<pass>
 
 * Generate the schema::
 
-    mvn sql:execute
+  mvn sql:execute
 
 iptables
 --------
