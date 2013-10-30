@@ -26,7 +26,7 @@ Installation
 Compilation
 -----------
 
-* Change the user name and password as well as the database name in both `pom.xml` and `src/main/resources/torque.properties`.
+* Change the user name and password as well as the database name in both ``pom.xml`` and ``src/main/resources/torque.properties``.
 * Generate the executable jar::
 
     mvn package
@@ -42,7 +42,7 @@ Compilation
 iptables
 --------
 
-You will need to set up an iptables `REDIRECT` rule in order to
+You will need to set up an iptables ``REDIRECT`` rule in order to
 intercept the outbound connections::
 
   iptables -t nat -A PREROUTING -s <your_envoy_address> \
@@ -71,6 +71,6 @@ Acknowledgment
 
 Many thanks to @larsks envoy-tools_ project, which gave me most of the information I needed to roll my own.
 
-The code in `src/main/java/org/grajagan/zlib/CompressionUtils.java` is not mine but I lost the source.
+The code in ``src/main/java/org/grajagan/zlib/CompressionUtils.java`` is not mine but I lost the source.
 
 .. _envoy-tools: https://github.com/larsks/envoy-tools
