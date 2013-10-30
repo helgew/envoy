@@ -111,7 +111,7 @@ public class ReportLoader {
             report.save();
         }
 
-        LOG.debug("Loading report #" + report.getReportId() + " from " + xmlFile);
+        LOG.info("Loading report #" + report.getReportId() + " from " + xmlFile);
 
         nodeList = rootElement.getElementsByTagName("interval");
 

@@ -176,7 +176,7 @@ public class EnvoyProxyServer implements Runnable {
     public void start() throws Exception {
         HttpsServer server = HttpsServerFactory.createServer(localHost, localPort);
         server.createContext("/", handler);
-        LOG.debug("Starting proxy for " + remote + " on " + localHost + " and port " + localPort);
+        LOG.info("Starting proxy for " + remote + " on " + localHost + " and port " + localPort);
         server.start();
     }
 
