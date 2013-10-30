@@ -29,15 +29,15 @@ Compilation
 * Change the user name and password as well as the database name in both `pom.xml` and `src/main/resources/torque.properties`.
 * Generate the executable jar::
 
-  `mvn package`
+  mvn package
     
 * Create the envoy database::
 
-  `echo "create database envoy;" | mysql -u<user> -p<pass>`
+  echo "create database envoy;" | mysql -u<user> -p<pass>
 
 * Generate the schema::
 
-  `mvn sql:execute`
+  mvn sql:execute
 
 iptables
 --------
@@ -45,8 +45,8 @@ iptables
 You will need to set up an iptables `REDIRECT` rule in order to
 intercept the outbound connections::
 
-  `iptables -t nat -A PREROUTING -s <your_envoy_address> \
-    -p tcp --dport 443 -j REDIRECT --to-ports 7777`
+  iptables -t nat -A PREROUTING -s <your_envoy_address> \
+    -p tcp --dport 443 -j REDIRECT --to-ports 7777
 
 This will accept packets from your Envoy to port 443 and redirect them
 to port 7777.
@@ -69,6 +69,6 @@ The main class in the one-jar jar generated in `target/EnvoyProxyServer.jar` acc
 Acknowledgment
 ==============
 
-Many thanks to @larsks's envoy-tools_ project, which gave me most of the information I needed to roll my own.
+Many thanks to @larsks envoy-tools_ project, which gave me most of the information I needed to roll my own.
 
 .. _envoy-tools: https://github.com/larsks/envoy-tools
