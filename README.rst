@@ -54,7 +54,7 @@ to port 7777.
 Configuration
 =============
 
-The main class in the one-jar jar generated in `target/EnvoyProxyServer.jar` accepts the following run-time arguments::
+The main class in the one-jar jar generated in ``target/EnvoyProxyServer.jar`` accepts the following run-time arguments::
 
     Option                          Description                            
     ------                          -----------                            
