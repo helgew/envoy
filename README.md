@@ -2,7 +2,10 @@
 Envoy Proxy Server
 ==================
 
-This project provides an all-in-one solution to proxy and parse the data send from an Enphase Envoy appliance to the Enphase server. Most of the classes in the non-envoy packages can be used in similar projects.
+This project provides an all-in-one solution to proxy and parse the data sent from an Enphase Envoy_ appliance to the Enphase_ server. Most of the classes in the non-envoy packages can be used in similar projects.
+
+.. _Envoy: http://enphase.com/envoy/
+.. _Enphase: https://enlighten.enphaseenergy.com/public_systems
 
 Requirements
 ============
@@ -13,7 +16,9 @@ All external API dependencies are managed via maven, which is needed for compila
 
 To re-direct communications from the Envoy appliance, iptables or similar is needed.
 
-Out of the box, the project is configured to save data to a mysql database running on the same host as the proxy server.
+Out of the box, the project is configured to save data to a mysql database running on the same host as the proxy server. The project uses torque_ as the object-relational-model layer, which supports several other RDBMS.
+
+.. _torque: http://db.apache.org/torque/torque-4.0/index.html
 
 Installation
 =============
@@ -59,3 +64,9 @@ The main class in the one-jar jar generated in `target/EnvoyProxyServer.jar` acc
     --local-port <Integer>                  local port to listen to (default: 7777)
     --remote-url                            remote URL to proxy (default: https://reports.enphaseenergy.com)         
 
+Acknowledgment
+==============
+
+Many thanks to @larsks's envoy-tools_ project, which gave me most of the information I needed to roll my own.
+
+.. _envoy-tools: https://github.com/larsks/envoy-tools
