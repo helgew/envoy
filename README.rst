@@ -56,13 +56,13 @@ Configuration
 
 The main class in the one-jar jar generated in `target/EnvoyProxyServer.jar` accepts the following run-time arguments:
 
-    Option                                  Description                            
+    `Option                                  Description                            
     ------                                  -----------                            
     --help                                  display help text                      
     --load-files                            load files from optional directory or default directory if none given      
     --local-host                            local host address to bind to (default: localhost)                 
     --local-port <Integer>                  local port to listen to (default: 7777)
-    --remote-url                            remote URL to proxy (default: https://reports.enphaseenergy.com)         
+    --remote-url                            remote URL to proxy (default: https://reports.enphaseenergy.com)`   
 
 Acknowledgment
 ==============
