@@ -1,4 +1,4 @@
-package org.grajagan.envoy;
+package org.grajagan.ssl;
 
 import static java.net.HttpURLConnection.HTTP_OK;
 import static org.junit.Assert.assertEquals;
@@ -23,16 +23,16 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpsServer;
 
-public class ProxyHandlerTest {
+public class SSLProxyHandlerTest {
 
     private static final String TEST_PATH = "/search?q=test&qscrl=1";
-    private ProxyHandler proxyHandler;
+    private SSLProxyHandler proxyHandler;
     private URL url;
 
     @Before
     public void setUp() throws MalformedURLException {
         url = new URL("https://www.google.com");
-        proxyHandler = new ProxyHandler(url);
+        proxyHandler = new SSLProxyHandler(url);
     }
 
     @After
@@ -58,11 +58,11 @@ public class ProxyHandlerTest {
 
     class GetRemoteConnectionTestHandler implements HttpHandler {
 
-        private ProxyHandler proxyHandler;
+        private SSLProxyHandler proxyHandler;
         private URL remoteURL;
         private String errorMessage = null;
 
-        public GetRemoteConnectionTestHandler(ProxyHandler proxyHandler, URL remoteURL) {
+        public GetRemoteConnectionTestHandler(SSLProxyHandler proxyHandler, URL remoteURL) {
             this.proxyHandler = proxyHandler;
             this.remoteURL = remoteURL;
         }
@@ -71,7 +71,7 @@ public class ProxyHandlerTest {
         public void handle(HttpExchange exchange) throws IOException {
             HttpsURLConnection connection = proxyHandler.getRemoteConnection(exchange);
             try {
-                assertTrue(connection.getConnectTimeout() == ProxyHandler.TIMEOUT);
+                assertTrue(connection.getConnectTimeout() == SSLProxyHandler.TIMEOUT);
                 assertTrue(connection.getDoInput());
                 assertTrue(connection.getDoOutput());
                 assertTrue(connection.getRequestMethod().equals("GET"));

@@ -1,4 +1,4 @@
-package org.grajagan.envoy;
+package org.grajagan.ssl;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -9,7 +9,6 @@ import java.io.OutputStream;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URL;
-import java.net.URLDecoder;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.zip.DataFormatException;
@@ -19,24 +18,22 @@ import javax.net.ssl.HttpsURLConnection;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 import org.grajagan.http.HttpHeaders;
-import org.grajagan.ssl.HttpsServerFactory;
-import org.grajagan.ssl.HttpsURLConnectionFactory;
 import org.grajagan.zlib.CompressionUtils;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpsServer;
 
-public class ProxyHandler implements HttpHandler {
+public class SSLProxyHandler implements HttpHandler {
 
     public static final int TIMEOUT = 20000;
     private final URL remoteUrl;
     private File temporaryDirectory = null;
     private static final String prefix = "proxy-";
 
-    private static final Logger LOG = Logger.getLogger(ProxyHandler.class);
+    private static final Logger LOG = Logger.getLogger(SSLProxyHandler.class);
 
-    public ProxyHandler(URL upstreamUrl) {
+    public SSLProxyHandler(URL upstreamUrl) {
         this.remoteUrl = upstreamUrl;
     }
 
@@ -64,8 +61,8 @@ public class ProxyHandler implements HttpHandler {
                 pickle(requestFile, clientExchange.getRequestMethod() + " "
                         + remoteConnection.getURL().toString(), requestHeaders, requestBytes);
 
-        saveXML(requestString);
-
+        handleClientRequest(requestString, requestFile, requestHeaders);
+        
         OutputStream os = null;
         try {
             os = remoteConnection.getOutputStream();
@@ -95,10 +92,19 @@ public class ProxyHandler implements HttpHandler {
         byte[] responseBytes = ccopy(is, os);
 
         File responseFile = File.createTempFile(prefix, ".response", temporaryDirectory);
-        pickle(responseFile, responseHeaders.getMethod(), responseHeaders, responseBytes);
+        String responseString = pickle(responseFile, responseHeaders.getMethod(), responseHeaders, responseBytes);
+        handleRemoteResponse(responseString, responseFile, responseHeaders);
 
         os.close();
         clientExchange.close();
+    }
+
+    public void handleRemoteResponse(String responseString, File responseFile,
+            HttpHeaders responseHeaders) {
+    }
+
+    public void handleClientRequest(String requestString, File requestFile,
+            HttpHeaders requestHeaders) {        
     }
 
     private String pickle(File file, String method, HttpHeaders headers, byte[] body)
@@ -155,22 +161,6 @@ public class ProxyHandler implements HttpHandler {
         return remoteConnection;
     }
 
-    private void saveXML(String requestString) throws IOException {
-        File xml = File.createTempFile(prefix, ".xml", temporaryDirectory);
-        for (String keyValue : requestString.split("&")) {
-            String[] pair = keyValue.split("=");
-            if (pair[0].equals("body")) {
-                LOG.info("writing xml to " + xml);
-                FileOutputStream fos = new FileOutputStream(xml);
-                IOUtils.write(URLDecoder.decode(pair[1], "UTF-8"), fos);
-                fos.close();
-                return;
-            }
-        }
-        LOG.warn("no body key found");
-        xml.delete();
-    }
-
     public File getTemporaryDirectory() {
         return temporaryDirectory;
     }
@@ -215,7 +205,7 @@ public class ProxyHandler implements HttpHandler {
         LOG.debug("Starting proxy for " + remote + " on " + host + " and port " + port);
         HttpsServer server = HttpsServerFactory.createServer(host, port);
         URL url = URI.create(remote).toURL();
-        server.createContext("/", new ProxyHandler(url));
+        server.createContext("/", new SSLProxyHandler(url));
         server.start();
         while (true) {
         }

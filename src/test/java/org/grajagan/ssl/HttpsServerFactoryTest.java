@@ -28,6 +28,7 @@ public class HttpsServerFactoryTest {
         HttpsURLConnection connection =
                 HttpsURLConnectionFactory.createHttpsURLConnection(uri.toURL());
         assertTrue(connection.getResponseCode() == HTTP_OK);
+        server.stop(0);
     }
 
     public static HttpsServer getTestServer(HttpHandler handler) throws Exception {

@@ -40,165 +40,161 @@ import org.xml.sax.SAXException;
 
 public class ReportLoader {
 
-	private static final Logger LOG = Logger.getLogger(ReportLoader.class);
-	private static final Map<String, Equipment> INVERTERS = new HashMap<String, Equipment>();
+    private static final Logger LOG = Logger.getLogger(ReportLoader.class);
+    private static final Map<String, Equipment> INVERTERS = new HashMap<String, Equipment>();
 
-	public void doParse(File xmlFile) throws TorqueException,
-			ParserConfigurationException, IOException, XMLFormatException {
+    public void doParse(File xmlFile) throws TorqueException, ParserConfigurationException,
+            IOException, XMLFormatException {
 
-		DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-		DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-		Document document = null;
-		try {
-			document = dBuilder.parse(xmlFile);
-		} catch (SAXException e) {
-			LOG.error("Cannot parse " + xmlFile, e);
-			return;
-		}
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        Document document = null;
+        try {
+            document = dBuilder.parse(xmlFile);
+        } catch (SAXException e) {
+            LOG.error("Cannot parse " + xmlFile, e);
+            return;
+        }
 
-		document.getDocumentElement().normalize();
+        document.getDocumentElement().normalize();
 
-		Element rootElement = document.getDocumentElement();
-		LOG.debug("root element: " + rootElement.getNodeName());
+        Element rootElement = document.getDocumentElement();
 
-		if (!rootElement.getNodeName().equalsIgnoreCase("perf_report")) {
-			throw new XMLFormatException("Unsupported root node: "
-					+ rootElement.getNodeName());
-		}
+        if (!rootElement.getNodeName().equalsIgnoreCase("perf_report")) {
+            throw new XMLFormatException("Unsupported root node: " + rootElement.getNodeName());
+        }
 
-		NodeList nodeList = rootElement.getElementsByTagName("envoy");
-		if (nodeList.getLength() != 1) {
-			throw new XMLFormatException(
-					"Unsupported number of envoy elements: "
-							+ nodeList.getLength());
-		}
+        NodeList nodeList = rootElement.getElementsByTagName("envoy");
+        if (nodeList.getLength() != 1) {
+            throw new XMLFormatException("Unsupported number of envoy elements: "
+                    + nodeList.getLength());
+        }
 
-		Element envoyXML = (Element) nodeList.item(0);
+        Element envoyXML = (Element) nodeList.item(0);
 
-		String serialNumber = envoyXML.getAttribute("serial_num");
-		Envoy envoy = null;
+        String serialNumber = envoyXML.getAttribute("serial_num");
+        Envoy envoy = null;
 
-		try {
-			envoy = EnvoyPeer.retrieveByPK(serialNumber);
-		} catch (NoRowsException e) {
-			LOG.debug("Adding new envoy with serial number " + serialNumber);
-			envoy = EnvoyHelper.parseFromXMLElement(envoyXML);
-			envoy.save();
-		}
+        try {
+            envoy = EnvoyPeer.retrieveByPK(serialNumber);
+        } catch (NoRowsException e) {
+            LOG.debug("Adding new envoy with serial number " + serialNumber);
+            envoy = EnvoyHelper.parseFromXMLElement(envoyXML);
+            envoy.save();
+        }
 
-		Report report = new Report();
-		report.setEnvoy(envoy);
+        Report report = new Report();
+        report.setEnvoy(envoy);
 
-		Date timeStamp = new Date(Long.parseLong(rootElement
-				.getAttribute("report_timestamp")) * 1000);
-		report.setReportTimestamp(timeStamp);
+        Date timeStamp =
+                new Date(Long.parseLong(rootElement.getAttribute("report_timestamp")) * 1000);
+        report.setReportTimestamp(timeStamp);
 
-		Criteria criteria = new Criteria();
-		criteria.where(ReportPeer.ENVOY_ID, report.getEnvoyId());
-		criteria.and(ReportPeer.REPORT_TIMESTAMP, report.getReportTimestamp());
+        Criteria criteria = new Criteria();
+        criteria.where(ReportPeer.ENVOY_ID, report.getEnvoyId());
+        criteria.and(ReportPeer.REPORT_TIMESTAMP, report.getReportTimestamp());
 
-		List<Report> existingReports = ReportPeer.doSelect(criteria);
-		if (existingReports.size() > 0) {
-			report = existingReports.get(0);
-			LOG.info("Cleaning up results from previous load for report # "
-					+ report.getReportId());
-			for (Report r : existingReports) {
-				if (!r.getIntervals().isEmpty()) {
-					IntervalPeer.doDelete(r.getIntervals());
-				}
+        List<Report> existingReports = ReportPeer.doSelect(criteria);
+        if (existingReports.size() > 0) {
+            report = existingReports.get(0);
+            LOG.info("Cleaning up results from previous load for report # " + report.getReportId());
+            for (Report r : existingReports) {
+                if (!r.getIntervals().isEmpty()) {
+                    IntervalPeer.doDelete(r.getIntervals());
+                }
 
-				if (!r.getReadings().isEmpty()) {
-					ReadingPeer.doDelete(r.getReadings());
-				}
-			}
-		} else {
-			report.save();
-		}
+                if (!r.getReadings().isEmpty()) {
+                    ReadingPeer.doDelete(r.getReadings());
+                }
+            }
+        } else {
+            report.save();
+        }
 
-		nodeList = rootElement.getElementsByTagName("interval");
+        LOG.debug("Loading report #" + report.getReportId() + " from " + xmlFile);
 
-		for (int n = 0; n < nodeList.getLength(); n++) {
-			Element invXML = (Element) nodeList.item(n);
-			Equipment inverter = getOrCreateInverter(invXML
-					.getAttribute("eqid"));
-			Interval interval = IntervalHelper.parseFromXMLElement(invXML);
+        nodeList = rootElement.getElementsByTagName("interval");
 
-			if (isNew(interval)) {
-				interval.setEquipment(inverter);
-				interval.setReport(report);
-				interval.save();
-			}
-		}
+        int loaded;
+        for (loaded = 0; loaded < nodeList.getLength(); loaded++) {
+            Element invXML = (Element) nodeList.item(loaded);
+            Equipment inverter = getOrCreateInverter(invXML.getAttribute("eqid"));
+            Interval interval = IntervalHelper.parseFromXMLElement(invXML);
 
-		nodeList = rootElement.getElementsByTagName("reading");
+            if (isNew(interval)) {
+                interval.setEquipment(inverter);
+                interval.setReport(report);
+                interval.save();
+            }
+        }
 
-		for (int n = 0; n < nodeList.getLength(); n++) {
-			Element readXML = (Element) nodeList.item(n);
-			Equipment inverter = getOrCreateInverter(readXML
-					.getAttribute("eqid"));
-			Reading reading = ReadingHelper.parseFromXmlElement(readXML);
+        LOG.debug("Loaded " + loaded + " intervals");
 
-			if (isNew(reading)) {
-				reading.setEquipment(inverter);
-				reading.setReport(report);
-				reading.save();
-			}
-		}
+        nodeList = rootElement.getElementsByTagName("reading");
 
-	}
+        for (loaded = 0; loaded < nodeList.getLength(); loaded++) {
+            Element readXML = (Element) nodeList.item(loaded);
+            Equipment inverter = getOrCreateInverter(readXML.getAttribute("eqid"));
+            Reading reading = ReadingHelper.parseFromXmlElement(readXML);
 
-	private boolean isNew(Persistent omObject) throws TorqueException {
-		ObjectKey key = omObject.getPrimaryKey();
-		if (Interval.class.isInstance(omObject)) {
-			try {
-				IntervalPeer.retrieveByPK(key);
-			} catch (NoRowsException e) {
-				return true;
-			}
-		} else if (Reading.class.isInstance(omObject)) {
-			try {
-				ReadingPeer.retrieveByPK(key);
-			} catch (NoRowsException e) {
-				return true;
-			}
-		}
+            if (isNew(reading)) {
+                reading.setEquipment(inverter);
+                reading.setReport(report);
+                reading.save();
+            }
+        }
 
-		LOG.debug("found existing row for " + omObject.getClass().getName()
-				+ " #" + key);
-		return false;
-	}
+        LOG.debug("Loaded " + loaded + " readings");
+    }
 
-	private Equipment getOrCreateInverter(String serialNumber)
-			throws TorqueException {
+    private boolean isNew(Persistent omObject) throws TorqueException {
+        ObjectKey key = omObject.getPrimaryKey();
+        if (Interval.class.isInstance(omObject)) {
+            try {
+                IntervalPeer.retrieveByPK(key);
+            } catch (NoRowsException e) {
+                return true;
+            }
+        } else if (Reading.class.isInstance(omObject)) {
+            try {
+                ReadingPeer.retrieveByPK(key);
+            } catch (NoRowsException e) {
+                return true;
+            }
+        }
+        return false;
+    }
 
-		if (INVERTERS.containsKey(serialNumber)) {
-			return INVERTERS.get(serialNumber);
-		}
+    private Equipment getOrCreateInverter(String serialNumber) throws TorqueException {
 
-		Equipment inverter = new Equipment();
-		inverter.setSerialNumber(serialNumber);
-		List<Equipment> existingInv = EquipmentPeer.doSelect(inverter);
-		if (!existingInv.isEmpty()) {
-			inverter = existingInv.get(0);
-		} else {
-			inverter.save();
-		}
+        if (INVERTERS.containsKey(serialNumber)) {
+            return INVERTERS.get(serialNumber);
+        }
 
-		INVERTERS.put(serialNumber, inverter);
+        Equipment inverter = new Equipment();
+        inverter.setSerialNumber(serialNumber);
+        List<Equipment> existingInv = EquipmentPeer.doSelect(inverter);
+        if (!existingInv.isEmpty()) {
+            inverter = existingInv.get(0);
+        } else {
+            inverter.save();
+        }
 
-		return inverter;
-	}
+        INVERTERS.put(serialNumber, inverter);
 
-	public static void main(String[] args) throws Exception {
-		InputStream torqueConfigStream = ReportLoader.class
-				.getResourceAsStream("/torque.properties");
-		PropertiesConfiguration torqueConfiguration = new PropertiesConfiguration();
-		torqueConfiguration.load(torqueConfigStream);
-		Torque.init(torqueConfiguration);
+        return inverter;
+    }
 
-		ReportLoader loader = new ReportLoader();
-		for (String file : args) {
-			loader.doParse(new File(file));
-		}
-	}
+    public static void main(String[] args) throws Exception {
+        InputStream torqueConfigStream =
+                ReportLoader.class.getResourceAsStream("/torque.properties");
+        PropertiesConfiguration torqueConfiguration = new PropertiesConfiguration();
+        torqueConfiguration.load(torqueConfigStream);
+        Torque.init(torqueConfiguration);
+
+        ReportLoader loader = new ReportLoader();
+        for (String file : args) {
+            loader.doParse(new File(file));
+        }
+    }
 }
