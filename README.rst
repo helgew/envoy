@@ -51,8 +51,8 @@ intercept the outbound connections::
 This will accept packets from your Envoy to port 443 and redirect them
 to port 7777.
 
-Configuration
-=============
+Running
+=======
 
 The main class in the one-jar jar generated in ``target/EnvoyProxyServer.jar`` accepts the following run-time arguments::
 
@@ -65,6 +65,11 @@ The main class in the one-jar jar generated in ``target/EnvoyProxyServer.jar`` a
     --local-port <Integer>          local port to listen to (default: 7777)
     --remote-url                    remote URL to proxy
                                     (default: https://reports.enphaseenergy.com)
+                                    
+To execute, you may want to turn off one-jar logging completely::
+
+    java -Done-jar.silent=true -jar EnvoyProxyServer.jar --local-port 7777 \
+       --local-host 10.0.0.1
 
 Acknowledgment
 ==============
