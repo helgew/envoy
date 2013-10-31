@@ -65,6 +65,7 @@ The main class in the one-jar jar generated in ``target/EnvoyProxyServer.jar`` a
     --local-port <Integer>          local port to listen to (default: 7777)
     --remote-url                    remote URL to proxy
                                     (default: https://reports.enphaseenergy.com)
+	--spool-dir						spool directory to save files to (default: /var/spool/envoy)
                                     
 To execute, you may want to turn off one-jar logging completely::
 
@@ -75,7 +76,5 @@ Acknowledgment
 ==============
 
 Many thanks to @larsks envoy-tools_ project, which gave me most of the information I needed to roll my own.
-
-The code in ``src/main/java/org/grajagan/zlib/CompressionUtils.java`` is not mine but I lost the source.
 
 .. _envoy-tools: https://github.com/larsks/envoy-tools
