@@ -19,9 +19,12 @@ import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.http.protocol.HttpProcessor;
 import org.apache.log4j.Logger;
 import org.apache.torque.Torque;
+import org.grajagan.http.HttpEntityFileDumper;
 import org.grajagan.ssl.HttpsServerFactory;
+import org.grajagan.ssl.SSLProxyHandler;
 
 import com.sun.net.httpserver.HttpsServer;
 
@@ -29,14 +32,11 @@ public class EnvoyProxyServer implements Runnable {
 
     private static final Logger LOG = Logger.getLogger(EnvoyProxyServer.class);
 
-    private final EnvoyProxyHandler handler;
     private final BlockingQueue<File> queue;
     private final URL remote;
     private final String localHost;
-
     private final int localPort;
-
-    public static final File SPOOL_DIR = new File("/var/spool/envoy");
+    private final File spoolDir;
 
     private static final String HELP_ARG = "help";
 
@@ -48,11 +48,15 @@ public class EnvoyProxyServer implements Runnable {
 
     private static final String LOAD_FILES = "load-files";
 
+    private static final String SPOOL_DIR = "spool-dir";
+
     public static final int DEFAULT_PORT = 7777;
 
     public static final String DEFAULT_LOCAL_HOST = "localhost";
 
     public static final String DEFAULT_REMOTE_URL = "https://reports.enphaseenergy.com";
+
+    public static final File DEFAULT_SPOOL_DIR = new File("/var/spool/envoy");
 
     public static void main(String[] argv) throws Exception {
 
@@ -68,6 +72,8 @@ public class EnvoyProxyServer implements Runnable {
                 accepts(LOAD_FILES,
                         "load files from optional directory or default directory if none given")
                         .withOptionalArg().ofType(String.class);
+                accepts(SPOOL_DIR, "directory to save files in").withRequiredArg().ofType(
+                        File.class).defaultsTo(DEFAULT_SPOOL_DIR);
             }
 
         };
@@ -85,9 +91,9 @@ public class EnvoyProxyServer implements Runnable {
         URL url = new URI((String) options.valueOf(REMOTE_URL)).toURL();
         EnvoyProxyServer server =
                 new EnvoyProxyServer(url, (String) options.valueOf(LOCAL_HOST), (Integer) options
-                        .valueOf(LOCAL_PORT));
+                        .valueOf(LOCAL_PORT), (File) options.valueOf(SPOOL_DIR));
         server.start();
-        
+
         Thread t = new Thread(server);
         t.start();
 
@@ -117,18 +123,17 @@ public class EnvoyProxyServer implements Runnable {
         return true;
     }
 
-    public EnvoyProxyServer(URL remote, String localHost, int localPort) {
+    public EnvoyProxyServer(URL remote, String localHost, int localPort, File dir) {
         this.remote = remote;
         this.localHost = localHost;
         this.localPort = localPort;
         queue = new LinkedBlockingQueue<File>();
-        handler = new EnvoyProxyHandler(remote, queue);
-        handler.setTemporaryDirectory(SPOOL_DIR);
+        this.spoolDir = dir;
     }
 
     private void backup(File xml) {
         String subdir = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
-        File dir = new File(handler.getTemporaryDirectory(), subdir);
+        File dir = new File(spoolDir, subdir);
         dir.mkdirs();
         if (!dir.canWrite() || !compressGzipFile(xml, new File(dir, xml.getName() + ".gz"))) {
             LOG.error("Cannot back up to " + dir);
@@ -142,7 +147,7 @@ public class EnvoyProxyServer implements Runnable {
     }
 
     public void populateQueue() throws IOException {
-        populateQueue(handler.getTemporaryDirectory());
+        populateQueue(spoolDir);
     }
 
     public void populateQueue(File dir) throws IOException {
@@ -175,15 +180,21 @@ public class EnvoyProxyServer implements Runnable {
 
     public void start() throws Exception {
         HttpsServer server = HttpsServerFactory.createServer(localHost, localPort);
-        server.createContext("/", handler);
+        HttpProcessor p = new HttpEntityFileDumper("proxy-", spoolDir);
+        SSLProxyHandler proxy = new SSLProxyHandler(remote);
+        EnvoyProxyRequestInterceptor handler = new EnvoyProxyRequestInterceptor(queue);
+        handler.setTemporaryDirectory(spoolDir);
+        proxy.registerHttpProcessor(p);
+        proxy.registerHttpRequestInterceptor(handler);
+        server.createContext("/", proxy);
         LOG.info("Starting proxy for " + remote + " on " + localHost + " and port " + localPort);
         server.start();
     }
 
     @Override
     public void run() {
-        InputStream torqueConfigStream = ReportLoader.class
-                .getResourceAsStream("/torque.properties");
+        InputStream torqueConfigStream =
+                ReportLoader.class.getResourceAsStream("/torque.properties");
         PropertiesConfiguration torqueConfiguration = new PropertiesConfiguration();
 
         try {

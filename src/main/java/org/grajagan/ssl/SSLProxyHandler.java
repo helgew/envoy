@@ -1,40 +1,53 @@
 package org.grajagan.ssl;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.zip.DataFormatException;
 
 import javax.net.ssl.HttpsURLConnection;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpException;
+import org.apache.http.HttpMessage;
+import org.apache.http.HttpRequest;
+import org.apache.http.HttpRequestInterceptor;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpResponseInterceptor;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.message.BasicHttpEntityEnclosingRequest;
+import org.apache.http.message.BasicHttpRequest;
+import org.apache.http.message.BasicHttpResponse;
+import org.apache.http.protocol.BasicHttpContext;
+import org.apache.http.protocol.HttpContext;
+import org.apache.http.protocol.HttpProcessor;
 import org.apache.log4j.Logger;
 import org.grajagan.http.HttpHeaders;
-import org.grajagan.zlib.CompressionUtils;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpsServer;
 
-public class SSLProxyHandler implements HttpHandler {
+public class SSLProxyHandler implements HttpHandler, HttpProcessor {
 
     public static final int TIMEOUT = 20000;
     private final URL remoteUrl;
-    private File temporaryDirectory = null;
-    private static final String prefix = "proxy-";
+    private final List<HttpRequestInterceptor> requestHandlers;
+    private final List<HttpResponseInterceptor> responseHandlers;
 
     private static final Logger LOG = Logger.getLogger(SSLProxyHandler.class);
 
     public SSLProxyHandler(URL upstreamUrl) {
         this.remoteUrl = upstreamUrl;
+        requestHandlers = new ArrayList<HttpRequestInterceptor>();
+        responseHandlers = new ArrayList<HttpResponseInterceptor>();
     }
 
     @Override
@@ -56,13 +69,34 @@ public class SSLProxyHandler implements HttpHandler {
         InputStream is = clientExchange.getRequestBody();
         byte[] requestBytes = ccopy(is, null);
 
-        File requestFile = File.createTempFile(prefix, ".request", temporaryDirectory);
-        String requestString =
-                pickle(requestFile, clientExchange.getRequestMethod() + " "
-                        + remoteConnection.getURL().toString(), requestHeaders, requestBytes);
-
-        handleClientRequest(requestString, requestFile, requestHeaders);
+        HttpRequest httpRequest;
         
+        if (requestBytes.length > 0) {
+            httpRequest =
+                new BasicHttpEntityEnclosingRequest(clientExchange.getRequestMethod(),
+                        clientExchange.getRequestURI().toString(),
+                        HttpHeaders.getProtocolVersion(clientExchange.getProtocol()));
+            HttpEntity httpEntity = new ByteArrayEntity(requestBytes, requestHeaders.getContentType());
+            ((BasicHttpEntityEnclosingRequest) httpRequest).setEntity(httpEntity);
+        } else {
+            httpRequest = new BasicHttpRequest(clientExchange.getRequestMethod(),
+                    clientExchange.getRequestURI().toString(),
+                    HttpHeaders.getProtocolVersion(clientExchange.getProtocol()));
+        }
+        
+        populateHeaders(requestHeaders, httpRequest);
+        
+        HttpContext context = new BasicHttpContext();
+        for (Entry<String, Object> e : clientExchange.getHttpContext().getAttributes().entrySet()) {
+            context.setAttribute(e.getKey(), e.getValue());
+        }
+
+        try {
+            process(httpRequest, context);
+        } catch (HttpException e) {
+            LOG.error("Cannot process HttpRequest", e);
+        }
+
         OutputStream os = null;
         try {
             os = remoteConnection.getOutputStream();
@@ -77,7 +111,7 @@ public class SSLProxyHandler implements HttpHandler {
         os.close();
 
         LOG.debug("received " + remoteConnection.getResponseCode() + " from remote");
-        
+
         // copy remote response headers to client response
         HttpHeaders responseHeaders = new HttpHeaders(remoteConnection.getHeaderFields());
         clientExchange.getResponseHeaders().putAll(responseHeaders);
@@ -90,44 +124,28 @@ public class SSLProxyHandler implements HttpHandler {
         is = remoteConnection.getInputStream();
         os = clientExchange.getResponseBody();
         byte[] responseBytes = ccopy(is, os);
-
-        File responseFile = File.createTempFile(prefix, ".response", temporaryDirectory);
-        String responseString = pickle(responseFile, responseHeaders.getMethod(), responseHeaders, responseBytes);
-        handleRemoteResponse(responseString, responseFile, responseHeaders);
-
         os.close();
         clientExchange.close();
-    }
-
-    public void handleRemoteResponse(String responseString, File responseFile,
-            HttpHeaders responseHeaders) {
-    }
-
-    public void handleClientRequest(String requestString, File requestFile,
-            HttpHeaders requestHeaders) {        
-    }
-
-    private String pickle(File file, String method, HttpHeaders headers, byte[] body)
-            throws IOException {
-        FileOutputStream fos = new FileOutputStream(file);
-
-        LOG.info("writing to " + file);
-        IOUtils.write(method + "\n\n", fos);
-        IOUtils.write(headers.toString() + "\n", fos);
-
-        byte[] bytes = body;
-        if (headers.isDeflated()) {
-            try {
-                bytes = CompressionUtils.decompress(body);
-            } catch (DataFormatException e) {
-                LOG.warn("Cannot decompress data", e);
-            }
+        
+        HttpResponse httpResponse = new BasicHttpResponse(responseHeaders.getStatusLine());
+        ByteArrayEntity responseEntity = new ByteArrayEntity(responseBytes);
+        httpResponse.setEntity(responseEntity);
+        populateHeaders(responseHeaders, httpResponse);
+        
+        try {
+            process(httpResponse, context);
+        } catch (HttpException e) {
+            LOG.error("Cannot process HttpResponse", e);
         }
 
-        String string = new String(bytes);
-        IOUtils.write(string, fos);
-        fos.close();
-        return string;
+    }
+
+    private void populateHeaders(HttpHeaders headers, HttpMessage message) {
+        for (Entry<String, List<String>> entry : headers.entrySet()) {
+            for (String header : entry.getValue()) {
+                message.addHeader(entry.getKey(), header);
+            }
+        }
     }
 
     private static byte[] ccopy(InputStream input, OutputStream output) throws IOException {
@@ -161,19 +179,25 @@ public class SSLProxyHandler implements HttpHandler {
         return remoteConnection;
     }
 
-    public File getTemporaryDirectory() {
-        return temporaryDirectory;
+    public List<HttpRequestInterceptor> getRequestHandlers() {
+        return requestHandlers;
     }
 
-    public void setTemporaryDirectory(File tmpDirectory) {
-        temporaryDirectory = tmpDirectory;
-        if (!temporaryDirectory.exists()) {
-            if (!temporaryDirectory.mkdirs()) {
-                LOG.warn("Cannot log to " + temporaryDirectory
-                        + ", resorting to default temporary directory");
-                temporaryDirectory = null;
-            }
-        }
+    public void registerHttpRequestInterceptor(HttpRequestInterceptor interceptor) {
+        requestHandlers.add(interceptor);
+    }
+
+    public List<HttpResponseInterceptor> getResponseHandlers() {
+        return responseHandlers;
+    }
+
+    public void registerHttpResponseInterceptor(HttpResponseInterceptor interceptor) {
+        responseHandlers.add(interceptor);
+    }
+
+    public void registerHttpProcessor(HttpProcessor processor) {
+        requestHandlers.add(processor);
+        responseHandlers.add(processor);
     }
 
     /**
@@ -208,6 +232,22 @@ public class SSLProxyHandler implements HttpHandler {
         server.createContext("/", new SSLProxyHandler(url));
         server.start();
         while (true) {
+        }
+    }
+
+    @Override
+    public void process(HttpRequest request, HttpContext context) throws HttpException,
+            IOException {
+        for (HttpRequestInterceptor i : requestHandlers) {
+            i.process(request, context);
+        }
+    }
+
+    @Override
+    public void process(HttpResponse response, HttpContext context) throws HttpException,
+            IOException {
+        for (HttpResponseInterceptor i : responseHandlers) {
+            i.process(response, context);
         }
     }
 }

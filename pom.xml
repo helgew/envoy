@@ -46,6 +46,11 @@
 			<artifactId>jopt-simple</artifactId>
 			<version>4.3</version>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpcore</artifactId>
+			<version>4.3</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<plugins>
