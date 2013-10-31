@@ -179,14 +179,16 @@ public class EnvoyProxyServer implements Runnable {
     }
 
     public void start() throws Exception {
-        HttpsServer server = HttpsServerFactory.createServer(localHost, localPort);
-        HttpProcessor p = new HttpEntityFileDumper("proxy-", spoolDir);
-        SSLProxyHandler proxy = new SSLProxyHandler(remote);
         EnvoyProxyRequestInterceptor handler = new EnvoyProxyRequestInterceptor(queue);
-        handler.setTemporaryDirectory(spoolDir);
-        proxy.registerHttpProcessor(p);
+        handler.setSpoolDir(spoolDir);
+
+        SSLProxyHandler proxy = new SSLProxyHandler(remote);
+        proxy.registerHttpProcessor(new HttpEntityFileDumper("proxy-", spoolDir));
         proxy.registerHttpRequestInterceptor(handler);
+
+        HttpsServer server = HttpsServerFactory.createServer(localHost, localPort);
         server.createContext("/", proxy);
+
         LOG.info("Starting proxy for " + remote + " on " + localHost + " and port " + localPort);
         server.start();
     }

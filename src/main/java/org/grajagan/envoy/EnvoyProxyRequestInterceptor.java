@@ -3,8 +3,10 @@ package org.grajagan.envoy;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URLDecoder;
 import java.util.concurrent.BlockingQueue;
+import java.util.zip.InflaterInputStream;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
@@ -24,7 +26,7 @@ public class EnvoyProxyRequestInterceptor implements HttpRequestInterceptor {
     private static final Logger LOG = Logger.getLogger(EnvoyProxyRequestInterceptor.class);
 
     private BlockingQueue<File> queue;
-    private File temporaryDirectory;
+    private File spoolDir;
 
     public EnvoyProxyRequestInterceptor(BlockingQueue<File> queue) {
         this(queue, null);
@@ -32,17 +34,21 @@ public class EnvoyProxyRequestInterceptor implements HttpRequestInterceptor {
 
     public EnvoyProxyRequestInterceptor(BlockingQueue<File> queue, File dir) {
         this.queue = queue;
-        setTemporaryDirectory(dir);
+        setSpoolDir(dir);
     }
 
-    private void saveXML(HttpEntity entity) throws IOException {
+    private void saveXML(HttpEntity entity, boolean isDeflated) throws IOException {
         Header h = entity.getContentEncoding();
         String encoding = null;
         if (h != null) {
             encoding = h.getValue();
         }
-        String requestString = IOUtils.toString(entity.getContent(), encoding);
-        File xml = File.createTempFile("proxy-", ".xml", getTemporaryDirectory());
+        InputStream input = entity.getContent();
+        if (isDeflated) {
+            input = new InflaterInputStream(input);
+        }
+        String requestString = IOUtils.toString(input, encoding);
+        File xml = File.createTempFile("proxy-", ".xml", getSpoolDir());
         for (String keyValue : requestString.split("&")) {
             String[] pair = keyValue.split("=");
             if (pair[0].equals("body")) {
@@ -65,17 +71,20 @@ public class EnvoyProxyRequestInterceptor implements HttpRequestInterceptor {
             IOException {
         if (request.getRequestLine().getUri().endsWith(EXPECTED_PATH)) {
             HttpEntityEnclosingRequest r = (HttpEntityEnclosingRequest) request;
-            saveXML(r.getEntity());
+            Header h = r.getFirstHeader("Content-type");
+            boolean isDeflated =
+                    h != null && h.getValue().toLowerCase().startsWith("application/x-deflate");
+            saveXML(r.getEntity(), isDeflated);
         } else {
             LOG.warn("request not handled: " + request.getRequestLine().getUri());
         }
     }
 
-    public File getTemporaryDirectory() {
-        return temporaryDirectory;
+    public File getSpoolDir() {
+        return spoolDir;
     }
 
-    public void setTemporaryDirectory(File temporaryDirectory) {
-        this.temporaryDirectory = temporaryDirectory;
+    public void setSpoolDir(File temporaryDirectory) {
+        this.spoolDir = temporaryDirectory;
     }
 }
