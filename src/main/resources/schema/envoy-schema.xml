@@ -65,6 +65,7 @@
 		<column name="temperature" type="INTEGER"></column>
 		<column name="unknown1" type="FLOAT"></column>
 		<column name="unknown2" type="FLOAT"></column>
+		<column name="unknown3" type="FLOAT"></column>
 
 		<foreign-key foreignTable="report">
 			<reference local="report_id" foreign="report_id" />

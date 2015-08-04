@@ -13,7 +13,7 @@ public final class ReadingHelper {
 
         String[] stats = readXML.getAttribute("stats").split(",");
 
-        if (stats.length != 7) {
+        if (stats.length > 8) {
             throw new XMLFormatException("Unknown stats array for reading: " + readXML);
         }
 
@@ -24,6 +24,11 @@ public final class ReadingHelper {
         reading.setTemperature(Integer.parseInt(stats[4]));
         reading.setUnknown1(Double.parseDouble(stats[5]));
         reading.setUnknown2(Double.parseDouble(stats[6]));
+        
+        if (stats.length == 8) {
+            reading.setUnknown3(Double.parseDouble(stats[7]));
+        }
+        
         return reading;
     }
 }

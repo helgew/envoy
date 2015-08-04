@@ -21,7 +21,7 @@ import org.apache.log4j.Logger;
 public class EnvoyProxyRequestInterceptor implements HttpRequestInterceptor {
 
     public static final String EXPECTED_PATH =
-            "/emu_reports/performance_report?webcomm_version=4.1.0";
+            "/emu_reports/performance_report?webcomm_version=4.6.0";
 
     private static final Logger LOG = Logger.getLogger(EnvoyProxyRequestInterceptor.class);
 
