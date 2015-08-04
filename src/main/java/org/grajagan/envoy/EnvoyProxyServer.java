@@ -33,7 +33,7 @@ public class EnvoyProxyServer implements Runnable {
     private static final Logger LOG = Logger.getLogger(EnvoyProxyServer.class);
 
     private final BlockingQueue<File> queue;
-    private final URL remote;
+    private final URL remoteURL;
     private final String localHost;
     private final int localPort;
     private final File spoolDir;
@@ -124,7 +124,7 @@ public class EnvoyProxyServer implements Runnable {
     }
 
     public EnvoyProxyServer(URL remote, String localHost, int localPort, File dir) {
-        this.remote = remote;
+        this.remoteURL = remote;
         this.localHost = localHost;
         this.localPort = localPort;
         queue = new LinkedBlockingQueue<File>();
@@ -182,14 +182,14 @@ public class EnvoyProxyServer implements Runnable {
         EnvoyProxyRequestInterceptor handler = new EnvoyProxyRequestInterceptor(queue);
         handler.setSpoolDir(spoolDir);
 
-        SSLProxyHandler proxy = new SSLProxyHandler(remote);
+        SSLProxyHandler proxy = new SSLProxyHandler(remoteURL);
         proxy.registerHttpProcessor(new HttpEntityFileDumper("proxy-", spoolDir));
         proxy.registerHttpRequestInterceptor(handler);
 
         HttpsServer server = HttpsServerFactory.createServer(localHost, localPort);
         server.createContext("/", proxy);
 
-        LOG.info("Starting proxy for " + remote + " on " + localHost + " and port " + localPort);
+        LOG.info("Starting proxy for " + remoteURL + " on " + localHost + " and port " + localPort);
         server.start();
     }
 
@@ -218,5 +218,4 @@ public class EnvoyProxyServer implements Runnable {
             }
         }
     }
-
 }

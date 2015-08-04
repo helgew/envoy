@@ -1,7 +1,6 @@
 package org.grajagan.ssl;
 
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
 
 import java.security.KeyStore;
 import java.security.KeyStoreException;
