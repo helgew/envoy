@@ -109,7 +109,7 @@ public class InfluxDBLoader {
         // LOG.debug("field name is: " + fieldName);
         Point point = Point.measurement(measurement)
                 .time(reading.getDate().getTime(), TimeUnit.MILLISECONDS)
-                .tag("panel", "panel " + reading.getEquipmentId())
+                .tag("panel", "panel" + reading.getEquipmentId())
                 .addField("value", (Number) reading.getByName(fieldName))
                 .build();
 
