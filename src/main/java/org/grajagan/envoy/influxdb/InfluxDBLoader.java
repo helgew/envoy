@@ -90,7 +90,7 @@ public class InfluxDBLoader {
     public void load(Reading reading) {
         for (String field : FIELDS) {
             Point point = Point.measurement(field)
-                    .time(reading.getDate().getTime(), TimeUnit.SECONDS)
+                    .time(reading.getDate().getTime(), TimeUnit.MILLISECONDS)
                     .tag("panel", "panel " + reading.getEquipmentId())
                     .addField("value", (Number) reading.getByName(WordUtils.capitalizeFully(field, new char[]{'_'})))
                     .build();
