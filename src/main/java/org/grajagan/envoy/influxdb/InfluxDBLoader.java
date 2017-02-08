@@ -99,7 +99,12 @@ public class InfluxDBLoader {
 
         if (batchPoints.getPoints().size() >= 30 * FIELDS.length) {
             LOG.debug("Writing " + batchPoints.getPoints().size() + " points!");
-            influxDB.write(batchPoints);
+            try {
+                influxDB.write(batchPoints);
+            } catch (Exception e) {
+                LOG.error("Error when uploading to InfluxDB", e);
+            }
+
             batchPoints.getPoints().clear();
         }
     }
