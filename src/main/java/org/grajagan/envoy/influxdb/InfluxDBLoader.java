@@ -87,12 +87,10 @@ public class InfluxDBLoader {
     }
 
     public void load(Reading reading) {
-        for (String field : FIELDS) {
-            Point point = createPoint(field, reading);
-            batchPoints.point(point);
-        }
+        Point point = createPoint(reading);
+        batchPoints.point(point);
 
-        if (batchPoints.getPoints().size() >= 30 * FIELDS.length) {
+        if (batchPoints.getPoints().size() >= 30) {
             LOG.debug("Writing " + batchPoints.getPoints().size() + " points!");
             try {
                 influxDB.write(batchPoints);
@@ -104,16 +102,18 @@ public class InfluxDBLoader {
         }
     }
 
-    protected Point createPoint(String measurement, Reading reading) {
-        String fieldName = WordUtils.capitalizeFully(measurement, new char[]{'_'}).replaceAll("_", "");
-        // LOG.debug("field name is: " + fieldName);
-        Point point = Point.measurement(measurement)
+    protected Point createPoint(Reading reading) {
+        Point.Builder builder = Point.measurement("reading")
                 .time(reading.getDate().getTime(), TimeUnit.MILLISECONDS)
-                .tag("panel", "panel" + reading.getEquipmentId())
-                .addField("value", (Number) reading.getByName(fieldName))
-                .build();
+                .tag("panel", "panel" + reading.getEquipmentId());
+
+        for (String measurement : FIELDS) {
+            String fieldName = WordUtils.capitalizeFully(measurement, new char[]{'_'}).replaceAll("_", "");
+            // LOG.debug("field name is: " + fieldName);
+            builder.addField(measurement, (Number) reading.getByName(fieldName));
+        }
 
         // LOG.debug("Created point: " + point.lineProtocol());
-        return point;
+        return builder.build();
     }
 }

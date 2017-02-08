@@ -32,8 +32,13 @@ public class InfluxDBLoaderTest {
             Element readXML = (Element) nodeList.item(loaded);
             Reading reading = ReadingHelper.parseFromXmlElement(readXML);
             reading.setEquipmentId(1);
-            Point point = loader.createPoint("ac_voltage", reading);
-            assertEquals("ac_voltage,panel=panel1 value=" + reading.getAcVoltage() + " " + reading.getDate().getTime() * 1000000, point.lineProtocol());
+            Point point = loader.createPoint(reading);
+            assertEquals("reading,panel=panel1 ac_frequency=" + reading.getAcFrequency() + "," +
+                    "ac_voltage=" + reading.getAcVoltage() + "," +
+                    "dc_current=" + reading.getDcCurrent() + "," +
+                    "dc_voltage=" + reading.getDcVoltage() + "," +
+                    "temperature=" + reading.getTemperature() + "i " +
+                    reading.getDate().getTime() * 1000000, point.lineProtocol());
         }
     }
 }
