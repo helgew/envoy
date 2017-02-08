@@ -1,12 +1,17 @@
 package org.grajagan.envoy;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.io.InputStream;
+import com.sun.net.httpserver.HttpsServer;
+import joptsimple.OptionParser;
+import joptsimple.OptionSet;
+import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.log4j.Logger;
+import org.apache.torque.Torque;
+import org.grajagan.envoy.influxdb.InfluxDBLoader;
+import org.grajagan.http.HttpEntityFileDumper;
+import org.grajagan.ssl.HttpsServerFactory;
+import org.grajagan.ssl.SSLProxyHandler;
+
+import java.io.*;
 import java.net.URI;
 import java.net.URL;
 import java.text.SimpleDateFormat;
@@ -14,19 +19,6 @@ import java.util.Date;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.zip.GZIPOutputStream;
-
-import joptsimple.OptionParser;
-import joptsimple.OptionSet;
-
-import org.apache.commons.configuration.PropertiesConfiguration;
-import org.apache.http.protocol.HttpProcessor;
-import org.apache.log4j.Logger;
-import org.apache.torque.Torque;
-import org.grajagan.http.HttpEntityFileDumper;
-import org.grajagan.ssl.HttpsServerFactory;
-import org.grajagan.ssl.SSLProxyHandler;
-
-import com.sun.net.httpserver.HttpsServer;
 
 public class EnvoyProxyServer implements Runnable {
 
@@ -37,6 +29,8 @@ public class EnvoyProxyServer implements Runnable {
     private final String localHost;
     private final int localPort;
     private final File spoolDir;
+
+    private InfluxDBLoader influxDBLoader;
 
     private static final String HELP_ARG = "help";
 
@@ -50,11 +44,29 @@ public class EnvoyProxyServer implements Runnable {
 
     private static final String SPOOL_DIR = "spool-dir";
 
+    private static final String INFLUX_URL = "influx-url";
+
+    private static final String INFLUX_PORT = "influx-port";
+
+    private static final String INFLUX_USER = "influx-user";
+
+    private static final String INFLUX_PASS = "influx-password";
+
+    private static final String INFLUX_DB = "influx-db";
+
+    private static final String DISABLE_INFLUX = "disable-influx";
+
     public static final int DEFAULT_PORT = 7777;
 
     public static final String DEFAULT_LOCAL_HOST = "localhost";
 
     public static final String DEFAULT_REMOTE_URL = "https://reports.enphaseenergy.com";
+
+    public static final String DEFAULT_INFLUX_URL = "http://" + DEFAULT_LOCAL_HOST;
+
+    public static final int DEFAULT_INFLUX_PORT = 8086;
+
+    public static final String DEFAULT_INFLUX_DB = "envoy";
 
     public static final File DEFAULT_SPOOL_DIR = new File("/var/spool/envoy");
 
@@ -74,6 +86,15 @@ public class EnvoyProxyServer implements Runnable {
                         .withOptionalArg().ofType(String.class);
                 accepts(SPOOL_DIR, "directory to save files in").withRequiredArg().ofType(
                         File.class).defaultsTo(DEFAULT_SPOOL_DIR);
+                accepts(INFLUX_URL, "InfluxDB server URL").withRequiredArg().ofType(String.class)
+                        .defaultsTo(DEFAULT_INFLUX_URL);
+                accepts(INFLUX_PORT, "InfluxDB server port").withRequiredArg().ofType(Integer.class)
+                        .defaultsTo(DEFAULT_INFLUX_PORT);
+                accepts(INFLUX_USER, "InfluxDB server username").withRequiredArg().ofType(String.class);
+                accepts(INFLUX_PASS, "InfluxDB server password").withRequiredArg().ofType(String.class);
+                accepts(INFLUX_DB, "InfluxDB database").withRequiredArg().ofType(String.class)
+                        .defaultsTo(DEFAULT_INFLUX_DB);
+                accepts(DISABLE_INFLUX, "disable the uploading to InfluxDB");
             }
 
         };
@@ -93,6 +114,23 @@ public class EnvoyProxyServer implements Runnable {
                 new EnvoyProxyServer(url, (String) options.valueOf(LOCAL_HOST), (Integer) options
                         .valueOf(LOCAL_PORT), (File) options.valueOf(SPOOL_DIR));
         server.start();
+
+        if (!options.has(DISABLE_INFLUX)) {
+            URI influxDbUri = new URI((String) options.valueOf(INFLUX_URL));
+            influxDbUri = new URI(influxDbUri.getScheme(), influxDbUri.getUserInfo(),
+                    influxDbUri.getHost(), (Integer) options.valueOf(INFLUX_PORT),
+                    influxDbUri.getPath(), influxDbUri.getQuery(), influxDbUri.getFragment());
+
+            InfluxDBLoader influxDBLoader = new InfluxDBLoader(
+                    influxDbUri.toURL(),
+                    (String) options.valueOf(INFLUX_USER),
+                    (String) options.valueOf(INFLUX_PASS),
+                    (String) options.valueOf(INFLUX_DB)
+            );
+
+            influxDBLoader.connect();
+            server.setInfluxDBLoader(influxDBLoader);
+        }
 
         Thread t = new Thread(server);
         t.start();
@@ -178,6 +216,10 @@ public class EnvoyProxyServer implements Runnable {
         }
     }
 
+    public void setInfluxDBLoader(InfluxDBLoader influxDBLoader) {
+        this.influxDBLoader = influxDBLoader;
+    }
+
     public void start() throws Exception {
         EnvoyProxyRequestInterceptor handler = new EnvoyProxyRequestInterceptor(queue);
         handler.setSpoolDir(spoolDir);
@@ -208,6 +250,10 @@ public class EnvoyProxyServer implements Runnable {
         }
 
         ReportLoader loader = new ReportLoader();
+        if (influxDBLoader != null) {
+            loader.setInfluxDBLoader(influxDBLoader);
+        }
+
         while (true) {
             try {
                 File xml = queue.take();

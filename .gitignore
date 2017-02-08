@@ -3,3 +3,5 @@
 .project
 .classpath
 .checkstyle
+.idea
+.DS_Store

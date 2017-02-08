@@ -20,6 +20,7 @@ import org.apache.torque.TorqueException;
 import org.apache.torque.criteria.Criteria;
 import org.apache.torque.om.ObjectKey;
 import org.apache.torque.om.Persistent;
+import org.grajagan.envoy.influxdb.InfluxDBLoader;
 import org.grajagan.envoy.om.Envoy;
 import org.grajagan.envoy.om.EnvoyHelper;
 import org.grajagan.envoy.om.EnvoyPeer;
@@ -42,6 +43,7 @@ public class ReportLoader {
 
     private static final Logger LOG = Logger.getLogger(ReportLoader.class);
     private static final Map<String, Equipment> INVERTERS = new HashMap<String, Equipment>();
+    private InfluxDBLoader influxDBLoader;
 
     public void doParse(File xmlFile) throws TorqueException, ParserConfigurationException,
             IOException, XMLFormatException {
@@ -141,6 +143,9 @@ public class ReportLoader {
                 reading.setEquipment(inverter);
                 reading.setReport(report);
                 reading.save();
+                if (influxDBLoader != null) {
+                    influxDBLoader.load(reading);
+                }
             }
         }
 
@@ -183,6 +188,14 @@ public class ReportLoader {
         INVERTERS.put(serialNumber, inverter);
 
         return inverter;
+    }
+
+    public InfluxDBLoader getInfluxDBLoader() {
+        return influxDBLoader;
+    }
+
+    public void setInfluxDBLoader(InfluxDBLoader influxDBLoader) {
+        this.influxDBLoader = influxDBLoader;
     }
 
     public static void main(String[] args) throws Exception {
