@@ -42,7 +42,6 @@ public class InfluxDBLoader {
         batchPoints = BatchPoints.database(getInfluxDbName())
                 .retentionPolicy("autogen")
                 .consistency(InfluxDB.ConsistencyLevel.ALL)
-                .tag("loader", "envoyLoader")
                 .build();
         return idb;
     }
@@ -89,11 +88,7 @@ public class InfluxDBLoader {
 
     public void load(Reading reading) {
         for (String field : FIELDS) {
-            Point point = Point.measurement(field)
-                    .time(reading.getDate().getTime(), TimeUnit.MILLISECONDS)
-                    .tag("panel", "panel " + reading.getEquipmentId())
-                    .addField("value", (Number) reading.getByName(WordUtils.capitalizeFully(field, new char[]{'_'})))
-                    .build();
+            Point point = createPoint(field, reading);
             batchPoints.point(point);
         }
 
@@ -107,5 +102,18 @@ public class InfluxDBLoader {
 
             batchPoints.getPoints().clear();
         }
+    }
+
+    protected Point createPoint(String measurement, Reading reading) {
+        String fieldName = WordUtils.capitalizeFully(measurement, new char[]{'_'}).replaceAll("_", "");
+        // LOG.debug("field name is: " + fieldName);
+        Point point = Point.measurement(measurement)
+                .time(reading.getDate().getTime(), TimeUnit.MILLISECONDS)
+                .tag("panel", "panel " + reading.getEquipmentId())
+                .addField("value", (Number) reading.getByName(fieldName))
+                .build();
+
+        // LOG.debug("Created point: " + point.lineProtocol());
+        return point;
     }
 }
