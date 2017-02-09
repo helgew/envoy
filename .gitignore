@@ -1,8 +1,10 @@
-/target
+target/
 .settings
 .project
 .classpath
 .checkstyle
 .idea
 .DS_Store
-/spool
+spool/
+data/
+settings.pl
