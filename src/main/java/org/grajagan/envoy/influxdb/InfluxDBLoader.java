@@ -105,7 +105,7 @@ public class InfluxDBLoader {
     protected Point createPoint(Reading reading) {
         Point.Builder builder = Point.measurement("reading")
                 .time(reading.getDate().getTime(), TimeUnit.MILLISECONDS)
-                .tag("panel", "panel" + reading.getEquipmentId());
+                .addField("panel", "panel" + reading.getEquipmentId());
 
         for (String measurement : FIELDS) {
             String fieldName = WordUtils.capitalizeFully(measurement, new char[]{'_'}).replaceAll("_", "");

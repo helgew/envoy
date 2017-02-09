@@ -33,12 +33,13 @@ public class InfluxDBLoaderTest {
             Reading reading = ReadingHelper.parseFromXmlElement(readXML);
             reading.setEquipmentId(1);
             Point point = loader.createPoint(reading);
-            assertEquals("reading,panel=panel1 " +
+            assertEquals("reading " +
                     "ac_frequency=" + reading.getAcFrequency() + "," +
                     "ac_voltage=" + reading.getAcVoltage() + "," +
                     "dc_current=" + reading.getDcCurrent() + "," +
                     "dc_voltage=" + reading.getDcVoltage() + "," +
                     "duration=" + reading.getDuration() + "i," +
+                    "panel=\"panel1\"," +
                     "temperature=" + reading.getTemperature() + "i," +
                     "watt_seconds=" + reading.getWattSeconds() + "i " +
                     reading.getDate().getTime() * 1000000, point.lineProtocol());
