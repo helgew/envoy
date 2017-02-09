@@ -22,7 +22,7 @@ public class InfluxDBLoader {
 
     private BatchPoints batchPoints;
 
-    private static final String[] FIELDS = {"ac_voltage", "ac_frequency", "dc_voltage", "dc_current", "temperature"};
+    private static final String[] FIELDS = {"duration", "ac_voltage", "ac_frequency", "dc_voltage", "dc_current", "temperature", "watt_seconds"};
 
     public InfluxDBLoader(URL influxDbUrl, String influxDbUser, String influxDbPassword, String influxDbName) {
         setInfluxDbUrl(influxDbUrl);

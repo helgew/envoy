@@ -57,7 +57,8 @@
 		<column name="report_id" type="INTEGER" required="true"></column>
 		<column name="equipment_id" type="INTEGER"></column>
 		<column name="date" type="TIMESTAMP"></column>
-		<column name="flags" type="VARCHAR" size="100"></column>
+        <column name="duration" type="INTEGER"></column>
+        <column name="flags" type="VARCHAR" size="100"></column>
 		<column name="ac_voltage" type="FLOAT"></column>
 		<column name="ac_frequency" type="FLOAT"></column>
 		<column name="dc_voltage" type="FLOAT"></column>
@@ -65,7 +66,7 @@
 		<column name="temperature" type="INTEGER"></column>
 		<column name="unknown1" type="FLOAT"></column>
 		<column name="unknown2" type="FLOAT"></column>
-		<column name="unknown3" type="FLOAT"></column>
+		<column name="watt_seconds" type="INTEGER"></column>
 
 		<foreign-key foreignTable="report">
 			<reference local="report_id" foreign="report_id" />

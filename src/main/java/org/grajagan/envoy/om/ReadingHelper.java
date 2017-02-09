@@ -10,6 +10,7 @@ public final class ReadingHelper {
         Reading reading = new Reading();
         reading.setReadingId(Integer.parseInt(readXML.getAttribute("id")));
         reading.setDate(new Date(Long.parseLong(readXML.getAttribute("date")) * 1000));
+        reading.setDuration(Integer.parseInt(readXML.getAttribute("duration")));
 
         String[] stats = readXML.getAttribute("stats").split(",");
 
@@ -26,7 +27,7 @@ public final class ReadingHelper {
         reading.setUnknown2(Double.parseDouble(stats[6]));
         
         if (stats.length == 8) {
-            reading.setUnknown3(Double.parseDouble(stats[7]));
+            reading.setWattSeconds(Integer.parseInt(stats[7]));
         }
         
         return reading;
