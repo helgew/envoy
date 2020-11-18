@@ -29,7 +29,7 @@
 		<dependency>
 			<artifactId>mysql-connector-java</artifactId>
 			<groupId>mysql</groupId>
-			<version>5.0.4</version>
+			<version>8.0.16</version>
 		</dependency>
 		<dependency>
 			<artifactId>log4j</artifactId>
@@ -129,7 +129,7 @@
 					<dependency>
 						<artifactId>mysql-connector-java</artifactId>
 						<groupId>mysql</groupId>
-						<version>5.0.4</version>
+						<version>8.0.16</version>
 					</dependency>
 				</dependencies>
 			</plugin>
