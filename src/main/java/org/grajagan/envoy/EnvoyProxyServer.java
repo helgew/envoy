@@ -48,11 +48,11 @@ public class EnvoyProxyServer implements Runnable {
 
     private static final String INFLUX_PORT = "influx-port";
 
-    private static final String INFLUX_USER = "influx-user";
+    private static final String INFLUX_ORG = "influx-org";
 
-    private static final String INFLUX_PASS = "influx-password";
+    private static final String INFLUX_TOKEN = "influx-token";
 
-    private static final String INFLUX_DB = "influx-db";
+    private static final String INFLUX_BUCKET = "influx-bucket";
 
     private static final String DISABLE_INFLUX = "disable-influx";
 
@@ -66,7 +66,7 @@ public class EnvoyProxyServer implements Runnable {
 
     public static final int DEFAULT_INFLUX_PORT = 8086;
 
-    public static final String DEFAULT_INFLUX_DB = "envoy";
+    public static final String DEFAULT_INFLUX_BUCKET = "envoy/autogen";
 
     public static final File DEFAULT_SPOOL_DIR = new File("/var/spool/envoy");
 
@@ -90,10 +90,10 @@ public class EnvoyProxyServer implements Runnable {
                         .defaultsTo(DEFAULT_INFLUX_URL);
                 accepts(INFLUX_PORT, "InfluxDB server port").withRequiredArg().ofType(Integer.class)
                         .defaultsTo(DEFAULT_INFLUX_PORT);
-                accepts(INFLUX_USER, "InfluxDB server username").withRequiredArg().ofType(String.class);
-                accepts(INFLUX_PASS, "InfluxDB server password").withRequiredArg().ofType(String.class);
-                accepts(INFLUX_DB, "InfluxDB database").withRequiredArg().ofType(String.class)
-                        .defaultsTo(DEFAULT_INFLUX_DB);
+                accepts(INFLUX_ORG, "InfluxDB server org").withRequiredArg().ofType(String.class);
+                accepts(INFLUX_TOKEN, "InfluxDB server token").withRequiredArg().ofType(String.class);
+                accepts(INFLUX_BUCKET, "InfluxDB bucket").withRequiredArg().ofType(String.class)
+                        .defaultsTo(DEFAULT_INFLUX_BUCKET);
                 accepts(DISABLE_INFLUX, "disable the uploading to InfluxDB");
             }
 
@@ -123,9 +123,9 @@ public class EnvoyProxyServer implements Runnable {
 
             InfluxDBLoader influxDBLoader = new InfluxDBLoader(
                     influxDbUri.toURL(),
-                    (String) options.valueOf(INFLUX_USER),
-                    (String) options.valueOf(INFLUX_PASS),
-                    (String) options.valueOf(INFLUX_DB)
+                    (String) options.valueOf(INFLUX_ORG),
+                    (String) options.valueOf(INFLUX_TOKEN),
+                    (String) options.valueOf(INFLUX_BUCKET)
             );
 
             influxDBLoader.connect();
