@@ -13,7 +13,7 @@ public class HttpsURLConnectionFactoryTest {
 
     @Test
     public void testConnectivity() throws Exception {
-        URI uri = URI.create("https://mail.grajagan.org/");
+        URI uri = URI.create("https://reports.enphaseenergy.com/");
         HttpsURLConnection connection =
                 HttpsURLConnectionFactory.createHttpsURLConnection(uri.toURL());
         assertTrue(connection.getResponseCode() == HTTP_OK);

@@ -70,6 +70,7 @@ public class EnvoyProxyRequestInterceptor implements HttpRequestInterceptor {
     public void process(HttpRequest request, HttpContext context) throws HttpException,
             IOException {
         if (request.getRequestLine().getUri().endsWith(EXPECTED_PATH)) {
+            LOG.debug("handling: " + request.getRequestLine().getUri());
             HttpEntityEnclosingRequest r = (HttpEntityEnclosingRequest) request;
             Header h = r.getFirstHeader("Content-type");
             boolean isDeflated =
