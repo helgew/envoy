@@ -93,7 +93,7 @@ public class SSLProxyHandler implements HttpHandler, HttpProcessor {
 
         try {
             process(httpRequest, context);
-        } catch (HttpException e) {
+        } catch (Exception e) {
             LOG.error("Cannot process HttpRequest", e);
         }
 

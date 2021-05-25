@@ -58,7 +58,6 @@ public final class KeyStoreHelper {
             if (cert instanceof X509Certificate) {
                 try {
                     ((X509Certificate) cert).checkValidity();
-		    LOG.debug("Storing cert " + cert);
                     keyStore.setCertificateEntry("alias" + i++, cert);
                 } catch (CertificateExpiredException | CertificateNotYetValidException e) {
                     LOG.warn("Certificate is expired or not yet valid", e);
