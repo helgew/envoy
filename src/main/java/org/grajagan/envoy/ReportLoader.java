@@ -3,6 +3,7 @@ package org.grajagan.envoy;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -134,6 +135,7 @@ public class ReportLoader {
 
         nodeList = rootElement.getElementsByTagName("reading");
 
+        List<Reading> readings = new ArrayList<>();
         for (loaded = 0; loaded < nodeList.getLength(); loaded++) {
             Element readXML = (Element) nodeList.item(loaded);
             Equipment inverter = getOrCreateInverter(readXML.getAttribute("eqid"));
@@ -143,10 +145,12 @@ public class ReportLoader {
                 reading.setEquipment(inverter);
                 reading.setReport(report);
                 reading.save();
-                if (influxDBLoader != null) {
-                    influxDBLoader.load(reading);
-                }
+                readings.add(reading);
             }
+        }
+
+        if (influxDBLoader != null) {
+            influxDBLoader.load(readings);
         }
 
         LOG.debug("Loaded " + loaded + " readings");
@@ -154,13 +158,13 @@ public class ReportLoader {
 
     private boolean isNew(Persistent omObject) throws TorqueException {
         ObjectKey key = omObject.getPrimaryKey();
-        if (Interval.class.isInstance(omObject)) {
+        if (omObject instanceof Interval) {
             try {
                 IntervalPeer.retrieveByPK(key);
             } catch (NoRowsException e) {
                 return true;
             }
-        } else if (Reading.class.isInstance(omObject)) {
+        } else if (omObject instanceof Reading) {
             try {
                 ReadingPeer.retrieveByPK(key);
             } catch (NoRowsException e) {

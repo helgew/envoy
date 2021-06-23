@@ -34,13 +34,11 @@ public class HttpsServerFactoryTest {
     public static HttpsServer getTestServer(HttpHandler handler) throws Exception {
         HttpsServer server = HttpsServerFactory.createServer(BIND_ADDRESS, PORT);
         server.createContext("/", handler);
-        HttpsURLConnection.setDefaultHostnameVerifier(new javax.net.ssl.HostnameVerifier() {
-            public boolean verify(String hostname, javax.net.ssl.SSLSession sslSession) {
-                if (hostname.equals(BIND_ADDRESS)) {
-                    return true;
-                }
-                return false;
+        HttpsURLConnection.setDefaultHostnameVerifier((hostname, sslSession) -> {
+            if (hostname.equals(BIND_ADDRESS)) {
+                return true;
             }
+            return false;
         });
         return server;
     }

@@ -2,6 +2,7 @@ package org.grajagan.envoy.influxdb;
 
 import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.InfluxDBClientFactory;
+import com.influxdb.client.WriteApi;
 import com.influxdb.client.domain.WritePrecision;
 import com.influxdb.client.write.Point;
 import lombok.Data;
@@ -10,6 +11,8 @@ import org.apache.log4j.Logger;
 import org.grajagan.envoy.om.Reading;
 
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Data
@@ -35,13 +38,20 @@ public class InfluxDBLoader {
         influxDB = InfluxDBClientFactory.create(
                 getInfluxDbUrl().toString(),
                 getInfluxDbToken().toCharArray(),
-                getInfluxDbOrg()
+                getInfluxDbOrg(),
+                getInfluxDbBucket()
         );
     }
 
-    public void load(Reading reading) {
-        Point point = createPoint(reading);
-        influxDB.getWriteApi().writePoint(point);
+    public void load(List<Reading> readings) {
+        List<Point> points = new ArrayList<>();
+        for (Reading r : readings) {
+            points.add(createPoint(r));
+        }
+
+        WriteApi api = influxDB.getWriteApi();
+        api.writePoints(points);
+        api.close();
     }
 
     protected Point createPoint(Reading reading) {
