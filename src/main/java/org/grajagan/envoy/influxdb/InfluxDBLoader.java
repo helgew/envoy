@@ -51,6 +51,10 @@ public class InfluxDBLoader {
 
         WriteApi api = influxDB.getWriteApi();
         api.writePoints(points);
+
+        LOG.debug("Loaded " + points.size() + " points to InfluxDB");
+
+        api.flush();
         api.close();
     }
 
