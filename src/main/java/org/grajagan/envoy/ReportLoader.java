@@ -140,13 +140,14 @@ public class ReportLoader {
             Element readXML = (Element) nodeList.item(loaded);
             Equipment inverter = getOrCreateInverter(readXML.getAttribute("eqid"));
             Reading reading = ReadingHelper.parseFromXmlElement(readXML);
+            reading.setEquipment(inverter);
+            reading.setReport(report);
 
             if (isNew(reading)) {
-                reading.setEquipment(inverter);
-                reading.setReport(report);
                 reading.save();
-                readings.add(reading);
             }
+
+            readings.add(reading);
         }
 
         if (influxDBLoader != null) {
