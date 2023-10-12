@@ -1,9 +1,9 @@
 package org.grajagan.envoy.influxdb;
 
+import com.influxdb.client.write.Point;
 import org.grajagan.envoy.ParserTestUtil;
 import org.grajagan.envoy.om.Reading;
 import org.grajagan.envoy.om.ReadingHelper;
-import org.influxdb.dto.Point;
 import org.junit.Before;
 import org.junit.Test;
 import org.w3c.dom.Element;
@@ -41,7 +41,7 @@ public class InfluxDBLoaderTest {
                     "duration=" + reading.getDuration() + "i," +
                     "temperature=" + reading.getTemperature() + "i," +
                     "watt_seconds=" + reading.getWattSeconds() + "i " +
-                    reading.getDate().getTime() * 1000000, point.lineProtocol());
+                    reading.getDate().getTime(), point.toLineProtocol());
         }
     }
 }

@@ -46,8 +46,8 @@ public class SSLProxyHandler implements HttpHandler, HttpProcessor {
 
     public SSLProxyHandler(URL upstreamUrl) {
         this.remoteUrl = upstreamUrl;
-        requestHandlers = new ArrayList<HttpRequestInterceptor>();
-        responseHandlers = new ArrayList<HttpResponseInterceptor>();
+        requestHandlers = new ArrayList<>();
+        responseHandlers = new ArrayList<>();
     }
 
     @Override
@@ -93,7 +93,7 @@ public class SSLProxyHandler implements HttpHandler, HttpProcessor {
 
         try {
             process(httpRequest, context);
-        } catch (HttpException e) {
+        } catch (Exception e) {
             LOG.error("Cannot process HttpRequest", e);
         }
 
@@ -166,6 +166,7 @@ public class SSLProxyHandler implements HttpHandler, HttpProcessor {
                         clientExchange.getRequestURI().toString());
 
         try {
+	    LOG.debug("Connecting to " + url.toString());
             remoteConnection = HttpsURLConnectionFactory.createHttpsURLConnection(url);
         } catch (Exception e) {
             LOG.error("Cannot create remote connection", e);
